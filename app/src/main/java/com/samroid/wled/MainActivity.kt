@@ -8,6 +8,35 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.samroid.wled.domain.model.TransportDevice
+import com.samroid.wled.presentation.navigation.AppRoot
+import com.samroid.wled.presentation.settings.AppViewModel
+import com.samroid.wled.presentation.settings.Language
+import com.samroid.wled.presentation.settings.ThemeMode
+import com.samroid.wled.presentation.theme.WLEDTheme
+import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 /**
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +86,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -320,46 +350,7 @@ fun DeviceItem(
 }
         **/
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.core.os.LocaleListCompat
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.samroid.wled.domain.model.TransportDevice
-import com.samroid.wled.presentation.components.AppRoot
-import com.samroid.wled.presentation.components.AppScaffold
-import com.samroid.wled.presentation.components.AppTopBar
-import com.samroid.wled.presentation.dashboard.DashboardScreen
-import com.samroid.wled.presentation.navigation.Routes
-import com.samroid.wled.presentation.settings.AppViewModel
-import com.samroid.wled.presentation.settings.Language
-import com.samroid.wled.presentation.settings.ThemeMode
-import com.samroid.wled.presentation.theme.WLEDTheme
-import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -424,7 +415,12 @@ class MainActivity : ComponentActivity() {
                     ThemeMode.DARK -> true
                     ThemeMode.LIGHT -> false
                 }) {
-                   AppRoot(uiState)
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        AppRoot(uiState)
+                    }
 
                 }
 
@@ -564,9 +560,9 @@ fun BluetoothScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("لاگ:", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.log), fontWeight = FontWeight.SemiBold)
             TextButton(onClick = { viewModel.clearLog() }) {
-                Text("پاک کردن", fontSize = 12.sp)
+                Text(stringResource(R.string.delete), style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -578,8 +574,7 @@ fun BluetoothScreen(
             items(log.reversed()) { line ->
                 Text(
                     text = line,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
+                    style =MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(vertical = 1.dp)
                 )
             }
@@ -624,13 +619,13 @@ fun DeviceItem(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(device.name, fontWeight = FontWeight.Medium)
-            Text(device.address, fontSize = 12.sp, color = Color.Gray)
+            Text(device.address, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             Spacer(Modifier.height(8.dp))
             Button(
                 onClick = onConnect,
                 enabled = !busy
             ) {
-                Text("اتصال")
+                Text(stringResource(R.string.connect))
             }
         }
     }

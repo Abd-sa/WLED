@@ -3,6 +3,7 @@ package com.samroid.wled.data.transport
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.content.Context
+import com.samroid.wled.R
 import com.samroid.wled.data.transport.ble.BleManager
 import com.samroid.wled.domain.model.ControllerInfo
 import com.samroid.wled.domain.model.DeviceResponse

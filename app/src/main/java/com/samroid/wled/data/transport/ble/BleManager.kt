@@ -15,6 +15,7 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Build
+import com.samroid.wled.R
 import com.samroid.wled.data.protocol.Protocol
 import com.samroid.wled.data.protocol.ResponseParser
 import com.samroid.wled.domain.model.ControllerInfo
@@ -100,7 +101,7 @@ class BleManager(private val context: Context) {
 
         override fun onScanFailed(errorCode: Int) {
             _isScanning.value = false
-            addLog("Failed BLE Scan. Code: $errorCode")
+            addLog(context.getString(R.string.failed_ble_scan_code, errorCode))
         }
     }
 

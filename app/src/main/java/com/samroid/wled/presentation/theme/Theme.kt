@@ -10,62 +10,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF7C5CFF),
+private val DarkColors = darkColorScheme(
+    primary = PurplePrimary,
     onPrimary = Color.White,
-
-    secondary = Color(0xFF57C8FF),
-    onSecondary = Color.White,
-
-    tertiary = Color(0xFF39D98A),
-
-    background = Color(0xFF090B12),
-    onBackground = Color(0xFFF5F7FA),
-
-    surface = Color(0xFF121826),
-    surfaceBright = Color(0xFF1A2235),
-    surfaceContainer = Color(0xFF1B2437),
-    surfaceContainerHigh = Color(0xFF202B41),
-    surfaceContainerHighest = Color(0xFF29354D),
-
-    onSurface = Color(0xFFF5F7FA),
-    onSurfaceVariant = Color(0xFF98A4C0),
-
-    outline = Color(0xFF38445C),
-
-    error = Color(0xFFFF5D73),
-    onError = Color.White,
-
-    inversePrimary = Color(0xFFA08CFF)
+    secondary = PurplePrimaryDark,
+    onSecondary = Color.Black,
+    background = DarkBackground,
+    onBackground = DarkOnBackground,
+    surface = DarkSurface,
+    onSurface = DarkOnBackground,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = Color.White.copy(alpha = 0.12f),
+    error = StatusRed
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF6650FF),
+private val LightColors = lightColorScheme(
+    primary = PurplePrimary,
     onPrimary = Color.White,
-
-    secondary = Color(0xFF0B8DFF),
+    secondary = PurplePrimary,
     onSecondary = Color.White,
-
-    tertiary = Color(0xFF14A86C),
-
-    background = Color(0xFFF5F7FB),
-    onBackground = Color(0xFF0F172A),
-
-    surface = Color.White,
-    surfaceBright = Color(0xFFF7F8FC),
-    surfaceContainer = Color(0xFFF2F4F9),
-    surfaceContainerHigh = Color(0xFFECEFF7),
-    surfaceContainerHighest = Color(0xFFE5EAF5),
-
-    onSurface = Color(0xFF1C2333),
-    onSurfaceVariant = Color(0xFF6D7891),
-
-    outline = Color(0xFFD3DAE8),
-
-    error = Color(0xFFE5485C),
-    onError = Color.White
+    background = LightBackground,
+    onBackground = LightOnBackground,
+    surface = LightSurface,
+    onSurface = LightOnBackground,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = Color.Black.copy(alpha = 0.12f),
+    error = StatusRed
 )
-
 @Composable
 fun WLEDTheme(
     darkTheme: Boolean = true,
@@ -79,20 +52,20 @@ fun WLEDTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> DarkColors
+        else -> LightColors
     }
 
     MaterialTheme(
 
         colorScheme =
             if (darkTheme)
-                DarkColorScheme
+                DarkColors
             else
-                LightColorScheme,
+                LightColors,
 
 
-        typography = AppTypography,
+        typography = appTypographyForLocale(),
 
 
         shapes = AppShapes,

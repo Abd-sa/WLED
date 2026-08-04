@@ -33,18 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.samroid.wled.R
 import com.samroid.wled.domain.model.TransportConnectionState
 import com.samroid.wled.presentation.components.AppTopBar
-import com.samroid.wled.presentation.settings.AppUiState
-import com.samroid.wled.presentation.settings.ThemeMode
 import com.samroid.wled.presentation.theme.AppColors
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -52,32 +48,44 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import com.samroid.wled.R
+import com.samroid.wled.presentation.connection.bluetooth.BluetoothConnectionSheet
+import com.samroid.wled.presentation.connection.wifi.WifiConfigSheet
+import com.samroid.wled.presentation.theme.AppColors.Brand.Green
+import com.samroid.wled.presentation.theme.AppColors.Brand.Purple
+import com.samroid.wled.presentation.theme.AppColors.Brand.PurpleDim
+import com.samroid.wled.presentation.theme.AppColors.Brand.Red
+
 
 
 
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
-    appUiState: AppUiState,
-    onOpenBluetooth: () -> Unit = {},
-    onOpenWifi: () -> Unit = {},
-    onOpenNodes: () -> Unit = {}
+    title: String
+
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-
+    var showBluetoothSheet by remember { mutableStateOf(false) }
+    var showWifiSheet by remember { mutableStateOf(false) }
 // Top bar
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(
 
-                MaterialTheme.colorScheme.background  )
+                MaterialTheme.colorScheme.background
+            )
     )
     {
         AppTopBar(
-            title = stringResource(R.string.dashboard),
+            title = title,
             showBackButton = false,
             onBackClick = {  },
 
@@ -86,12 +94,18 @@ fun DashboardScreen(
             state = state,
             onRefreshNodes = {
                 viewModel.refreshNodes()
-                onOpenNodes()
+                //onOpenNodes()
             },
             onAmbientToggle = viewModel::setAmbientEnabled,
-            onOpenBluetooth = onOpenBluetooth,
-            onOpenWifi = onOpenWifi
+            onOpenBluetooth = { showBluetoothSheet = true },
+            onOpenWifi = { showWifiSheet = true }
         )
+        if (showBluetoothSheet) {
+            BluetoothConnectionSheet (onDismiss = { showBluetoothSheet = false })
+        }
+        if (showWifiSheet) {
+            WifiConfigSheet(onDismiss = { showWifiSheet = false })
+        }
     }
 
 }
@@ -128,23 +142,22 @@ fun DashboardContent(
             ) {
                 Column (modifier = Modifier.padding(10.dp)){
                     Text(
-                        text = "Connection",
+                        text = stringResource(R.string.connection),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.titleSmall
                     )
                     Spacer(Modifier.height(10.dp))
 
                     ConnectionCard(
                         icon = Icons.Outlined.Bluetooth,
-                        title = "Bluetooth",
+                        title = stringResource(R.string.bluetooth),
                         subtitle = state.bluetoothName,
                         connected = state.bluetoothState == TransportConnectionState.CONNECTED,
                         statusText = when (state.bluetoothState) {
-                            TransportConnectionState.CONNECTED -> "Connected"
-                            TransportConnectionState.CONNECTING -> "Connecting..."
-                            TransportConnectionState.ERROR -> "Error"
-                            TransportConnectionState.DISCONNECTED -> "Disconnected"
+                            TransportConnectionState.CONNECTED -> stringResource(R.string.connected)
+                            TransportConnectionState.CONNECTING -> stringResource(R.string.connecting)
+                            TransportConnectionState.ERROR -> stringResource(R.string.error)
+                            TransportConnectionState.DISCONNECTED -> stringResource(R.string.disconnected)
                         },
                         onClick = onOpenBluetooth
                     )
@@ -153,13 +166,13 @@ fun DashboardContent(
 
                     ConnectionCard(
                         icon = Icons.Outlined.Wifi,
-                        title = "WiFi (Master)",
+                        title = stringResource(R.string.wifi_master),
                         subtitle = buildString {
                             append(state.wifiSsid)
-                            if (state.wifiIp != "—") append("\n").append(state.wifiIp)
+                            if (state.wifiIp != stringResource(R.string.empt_dash)) append("\n").append(state.wifiIp)
                         },
                         connected = state.wifiConnected,
-                        statusText = if (state.wifiConnected) "Connected" else "Disconnected",
+                        statusText = if (state.wifiConnected) stringResource(R.string.connected) else stringResource(R.string.disconnected),
                         onClick = onOpenWifi
                     )
 
@@ -182,10 +195,9 @@ fun DashboardContent(
             ) {
                 Column (modifier = Modifier.padding(10.dp)) {
                     Text(
-                        text = "Nodes Overview",
+                        text = stringResource(R.string.nodes_overview),
                         color =  MaterialTheme.colorScheme.onSurfaceVariant  ,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.titleSmall
                     )
                     Spacer(Modifier.height(10.dp))
 
@@ -194,21 +206,21 @@ fun DashboardContent(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         StatChip(
-                            label = "Total",
+                            label = stringResource(R.string.total),
                             value = state.totalNodes.toString(),
                             valueColor = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                         StatChip(
-                            label = "Online",
+                            label = stringResource(R.string.online),
                             value = state.onlineNodes.toString(),
-                            valueColor = AppColors.Brand.Green,
+                            valueColor = Green,
                             modifier = Modifier.weight(1f)
                         )
                         StatChip(
-                            label = "Offline",
+                            label = stringResource(R.string.offline),
                             value = state.offlineNodes.toString(),
-                            valueColor = AppColors.Brand.Red,
+                            valueColor = Red,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -227,22 +239,21 @@ fun DashboardContent(
                             .height(52.dp),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.Brand.Purple,
-                            disabledContainerColor = AppColors.Brand.PurpleDim.copy(alpha = 0.4f)
+                            containerColor = Purple,
+                            disabledContainerColor = PurpleDim.copy(alpha = 0.4f)
                         )
                     ) {
                         if (state.isRefreshingNodes) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 strokeWidth = 2.dp
                             )
                             Spacer(Modifier.width(10.dp))
                         }
                         Text(
-                            text = "Refresh Nodes",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
+                            text = stringResource(R.string.refresh_nodes),
+                            style =MaterialTheme.typography.titleMedium
                         )
                     }
                 }
@@ -288,7 +299,11 @@ fun ConnectionCard(
     Card (
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                RoundedCornerShape(16.dp)
+            )
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -307,21 +322,21 @@ fun ConnectionCard(
                     .background(
                         Brush.linearGradient(
                             listOf(
-                                AppColors.Brand.Purple.copy(alpha = 0.35f),
-                                AppColors.Brand.PurpleDim.copy(alpha = 0.2f)
+                                Purple.copy(alpha = 0.35f),
+                                PurpleDim.copy(alpha = 0.2f)
                             )
                         )
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = AppColors.Brand.Purple)
+                Icon(icon, contentDescription = null, tint = Purple)
             }
 
             Spacer(Modifier.width(14.dp))
 
             Column (modifier = Modifier.weight(1f)) {
-                Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, lineHeight = 16.sp)
+                Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
+                Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, lineHeight = 16.sp)
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -334,8 +349,7 @@ fun ConnectionCard(
                     Text(
                         text = statusText,
                         color = if (connected) AppColors.Status.Success else AppColors.Text.SecondaryDark,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
@@ -355,14 +369,18 @@ private fun StatChip(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background( MaterialTheme.colorScheme.surfaceContainer )
-            .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                RoundedCornerShape(16.dp)
+            )
             .padding(vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant , fontSize = 12.sp)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant , style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(4.dp))
-        Text(value, color = valueColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(value, color = valueColor, style = MaterialTheme.typography.headlineLarge)
     }
 }
 
@@ -373,7 +391,13 @@ private fun AmbientCard(
     onToggle: (Boolean) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(16.dp)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                RoundedCornerShape(16.dp)
+            ),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh )
     ) {
@@ -385,32 +409,29 @@ private fun AmbientCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Ambient Light (UDP)",
+                    text = stringResource(R.string.ambient_light_udp),
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp
+                    style =MaterialTheme.typography.titleMedium
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = if (enabled) "Streaming" else "Stopped",
-                    color = if (enabled) AppColors.Brand.Purple else{
+                    text = if (enabled) stringResource(R.string.streaming) else stringResource(R.string.stopped),
+                    color = if (enabled) Purple else{
                          MaterialTheme.colorScheme.onSurfaceVariant  },
-                    fontSize = 12.sp
+                    style = MaterialTheme.typography.bodySmall
                 )
                 Text(
                     text = endpoint,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f) ,
-                    fontSize = 11.sp
+                    style =MaterialTheme.typography.labelSmall
                 )
             }
             Switch(
                 checked = enabled,
                 onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onSurface,
-                    checkedTrackColor = AppColors.Brand.Purple,
-                    uncheckedThumbColor =  MaterialTheme.colorScheme.onSurfaceVariant ,
-                    uncheckedTrackColor = Color(0xFF2A2A3A)
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
