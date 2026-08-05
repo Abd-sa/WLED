@@ -1,13 +1,10 @@
 package com.samroid.wled.presentation.nodecontrol
 
-import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.samroid.wled.R
 import com.samroid.wled.data.transport.DeviceTransport
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +15,6 @@ import javax.inject.Inject
 @HiltViewModel
 class NodeControlViewModel @Inject constructor(
     private val transport: DeviceTransport,
-    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -39,10 +35,7 @@ class NodeControlViewModel @Inject constructor(
             transport.nodeInfo.collect { info ->
                 if (info != null && info.nodeId == nodeId) {
                     _uiState.update {
-                        it.copy(
-                            cctEnabled = info.cctEnabled,
-                            online = true
-                        )
+                        it.copy(cctEnabled = info.cctEnabled, online = true)
                     }
                 }
             }
@@ -56,7 +49,7 @@ class NodeControlViewModel @Inject constructor(
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
-    // ================= RGB =================
+    // ---- RGB power / brightness / color ----
 
     fun setRgbOn(on: Boolean) {
         _uiState.update {
@@ -104,6 +97,8 @@ class NodeControlViewModel @Inject constructor(
         }
     }
 
+    // ---- RGB effect (segment 0) ----
+
     fun setRgbEffectId(id: Int) {
         val v = id.coerceIn(0, 159)
         _uiState.update { it.copy(rgbEffectId = v, rgbEffectExpanded = false) }
@@ -131,7 +126,6 @@ class NodeControlViewModel @Inject constructor(
         }
     }
 
-
     fun setRgbEffectIntensity(value: Float) {
         _uiState.update { it.copy(rgbEffectIntensity = value.coerceIn(0f, 255f)) }
     }
@@ -151,7 +145,7 @@ class NodeControlViewModel @Inject constructor(
         _uiState.update { it.copy(rgbPaletteExpanded = expanded) }
     }
 
-    // ================= CCT =================
+    // ---- CCT power / brightness / value ----
 
     fun setCctOn(on: Boolean) {
         _uiState.update {
@@ -185,7 +179,7 @@ class NodeControlViewModel @Inject constructor(
         }
     }
 
-
+    // ---- CCT effect (segment 1) ----
 
     fun setCctEffectId(id: Int) {
         val v = id.coerceIn(0, 159)
@@ -233,7 +227,7 @@ class NodeControlViewModel @Inject constructor(
         _uiState.update { it.copy(cctPaletteExpanded = expanded) }
     }
 
-    // ================= Presets =================
+    // ---- Presets ----
 
     fun savePreset(presetId: Int) {
         val id = presetId.coerceIn(1, 6)
@@ -245,9 +239,9 @@ class NodeControlViewModel @Inject constructor(
                     isPresetBusy = false,
                     savedPresets = if (ok) it.savedPresets + id else it.savedPresets,
                     lastPresetAction = when {
-                        !ok -> context.getString(R.string.preset_save_failed, id)
-                        id == 1 -> context.getString(R.string.preset_1_saved_boot)
-                        else -> context.getString(R.string.preset_saved, id)
+                        !ok -> "Save preset $id failed"
+                        id == 1 -> "Preset 1 saved (apply on boot)"
+                        else -> "Preset $id saved"
                     }
                 )
             }
@@ -262,11 +256,7 @@ class NodeControlViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isPresetBusy = false,
-                    lastPresetAction = if (ok) {
-                        context.getString(R.string.preset_loaded, id)
-                    } else {
-                        context.getString(R.string.preset_load_failed, id)
-                    }
+                    lastPresetAction = if (ok) "Preset $id loaded" else "Load preset $id failed"
                 )
             }
         }

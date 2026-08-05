@@ -146,6 +146,7 @@ fun NodeControlScreen(
                 }
 
                 if (state.rgbOn) {
+                    /**
                     Spacer(Modifier.height(14.dp))
                     LabelValue(
                         stringResource(R.string.brightness),
@@ -277,6 +278,67 @@ fun NodeControlScreen(
                         onValueChange = viewModel::setRgbEffectIntensity,
                         onValueChangeFinished = viewModel::commitRgbEffectIntensity
                     )
+                    **/
+                    Spacer(Modifier.height(14.dp))
+
+                    // ---- RGB Effect / Palette / SX / IX ----
+                    Text(
+                        stringResource(R.string.rgb_effect),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        stringResource(R.string.effect),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    DropdownSelector(
+                        label = EffectCatalog.effectLabel(state.rgbEffectId),
+                        expanded = state.rgbEffectExpanded,
+                        onExpandedChange = viewModel::toggleRgbEffectMenu,
+                        items = effectItems,
+                        onSelect = viewModel::setRgbEffectId
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        stringResource(R.string.palette),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    DropdownSelector(
+                        label = EffectCatalog.paletteLabel(state.rgbPaletteId),
+                        expanded = state.rgbPaletteExpanded,
+                        onExpandedChange = viewModel::toggleRgbPaletteMenu,
+                        items = paletteItems,
+                        onSelect = viewModel::setRgbPaletteId
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+                    LabelValue(
+                        stringResource(R.string.speed),
+                        state.rgbEffectSpeed.toInt().toString()
+                    )
+                    ControlSlider(
+                        value = state.rgbEffectSpeed,
+                        onValueChange = viewModel::setRgbEffectSpeed,
+                        onValueChangeFinished = viewModel::commitRgbEffectSpeed
+                    )
+
+                    LabelValue(
+                        stringResource(R.string.intensity),
+                        state.rgbEffectIntensity.toInt().toString()
+                    )
+                    ControlSlider(
+                        value = state.rgbEffectIntensity,
+                        onValueChange = viewModel::setRgbEffectIntensity,
+                        onValueChangeFinished = viewModel::commitRgbEffectIntensity
+                    )
+
                 }
             }
 
@@ -340,6 +402,7 @@ fun NodeControlScreen(
                         )
 
                         Spacer(Modifier.height(16.dp))
+                        /*
                         Text(
                             stringResource(R.string.cct_effect),
                             color = MaterialTheme.colorScheme.onBackground,
@@ -371,6 +434,64 @@ fun NodeControlScreen(
                             onValueChange = viewModel::setCctEffectSpeed,
                             onValueChangeFinished = viewModel::commitCctEffectSpeed
                         )
+                        LabelValue(
+                            stringResource(R.string.intensity),
+                            state.cctEffectIntensity.toInt().toString()
+                        )
+                        ControlSlider(
+                            value = state.cctEffectIntensity,
+                            onValueChange = viewModel::setCctEffectIntensity,
+                            onValueChangeFinished = viewModel::commitCctEffectIntensity
+                        )
+
+                         */
+                        Text(
+                            stringResource(R.string.cct_effect),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(12.dp))
+
+                        Text(
+                            stringResource(R.string.effect),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        DropdownSelector(
+                            label = EffectCatalog.effectLabel(state.cctEffectId),
+                            expanded = state.cctEffectExpanded,
+                            onExpandedChange = viewModel::toggleCctEffectMenu,
+                            items = effectItems,
+                            onSelect = viewModel::setCctEffectId
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            stringResource(R.string.palette),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        DropdownSelector(
+                            label = EffectCatalog.paletteLabel(state.cctPaletteId),
+                            expanded = state.cctPaletteExpanded,
+                            onExpandedChange = viewModel::toggleCctPaletteMenu,
+                            items = paletteItems,
+                            onSelect = viewModel::setCctPaletteId
+                        )
+
+                        Spacer(Modifier.height(14.dp))
+                        LabelValue(
+                            stringResource(R.string.speed),
+                            state.cctEffectSpeed.toInt().toString()
+                        )
+                        ControlSlider(
+                            value = state.cctEffectSpeed,
+                            onValueChange = viewModel::setCctEffectSpeed,
+                            onValueChangeFinished = viewModel::commitCctEffectSpeed
+                        )
+
                         LabelValue(
                             stringResource(R.string.intensity),
                             state.cctEffectIntensity.toInt().toString()
