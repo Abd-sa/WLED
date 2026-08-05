@@ -42,29 +42,47 @@ class ProvisionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Starts provision session: PROVISION then optional SCAN_WLED.
+     */
     fun startProvisionIfNeeded() {
         val s = _uiState.value
         if (s.provisionStarted || !s.bluetoothConnected) return
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
+            _uiState.update { it.copy(isBusy = true, isSearching = true, message = null) }
+
             val ok = transport.provision()
+            if (!ok) {
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        isSearching = false,
+                        message = context.getString(R.string.provision_failed)
+                    )
+                }
+                return@launch
+            }
+
+            // Optional scan for new WLED node (employer flow)
+            runCatching { transport.scanWled() }
+
             _uiState.update {
                 it.copy(
                     isBusy = false,
-                    provisionStarted = ok,
-                    message = if (ok) context.getString(R.string.provision_started) else context.getString(
-                        R.string.provision_failed
-                    )
+                    isSearching = false,
+                    provisionStarted = true,
+                    currentStep = ProvisionStep.GPIO,
+                    message = context.getString(R.string.provision_started)
                 )
             }
         }
     }
 
     // ---- inputs ----
+
     fun onGpioChange(v: String) {
-        _uiState.update {
-            it.copy(gpioValue = v.filter { c -> c.isDigit() }.take(3))
-        }
+        _uiState.update { it.copy(gpioValue = v.filter { c -> c.isDigit() }.take(3)) }
     }
 
     fun onColorOrderSelect(order: Int) {
@@ -72,9 +90,23 @@ class ProvisionViewModel @Inject constructor(
     }
 
     fun onLengthChange(v: String) {
-        _uiState.update {
-            it.copy(lengthValue = v.filter { c -> c.isDigit() }.take(3))
-        }
+        _uiState.update { it.copy(lengthValue = v.filter { c -> c.isDigit() }.take(3)) }
+    }
+
+    fun onCctWarmChange(v: String) {
+        _uiState.update { it.copy(cctWarmGpio = v.filter { c -> c.isDigit() }.take(3)) }
+    }
+
+    fun onCctCoolChange(v: String) {
+        _uiState.update { it.copy(cctCoolGpio = v.filter { c -> c.isDigit() }.take(3)) }
+    }
+
+    fun onStoreNodeIdChange(v: String) {
+        _uiState.update { it.copy(storeNodeId = v.filter { c -> c.isDigit() }.take(3)) }
+    }
+
+    fun onStoreNodeNameChange(v: String) {
+        _uiState.update { it.copy(storeNodeName = v.take(32)) }
     }
 
     fun goToStep(step: ProvisionStep) {
@@ -86,21 +118,29 @@ class ProvisionViewModel @Inject constructor(
         if (idx > 1) goToStep(ProvisionStep.fromIndex(idx - 1))
     }
 
-    // ---- Step actions ----
+    // ---- Step 1 GPIO ----
 
     fun testGpio() {
         val pin = _uiState.value.gpioValue.toIntOrNull()
         if (pin == null || pin !in 0..255) {
-            _uiState.update { it.copy(message = "GPIO باید 0 تا 255 باشد") }
+            _uiState.update {
+                it.copy(message = context.getString(R.string.gpio_range_error))
+            }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             transport.gpioValue(pin)
-            _uiState.update { it.copy(isBusy = false, message = "GPIO_VALUE ارسال شد — LED را چک کن") }
+            _uiState.update {
+                it.copy(
+                    isBusy = false,
+                    message = context.getString(R.string.gpio_value_sent)
+                )
+            }
         }
     }
 
+    /** Confirm allowed without Test (employer note steps 1–4). */
     fun confirmGpio() {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
@@ -109,17 +149,28 @@ class ProvisionViewModel @Inject constructor(
                 it.copy(
                     isBusy = false,
                     currentStep = if (ok) ProvisionStep.COLOR else it.currentStep,
-                    message = if (ok) "GPIO تأیید شد" else "خطا در GPIO_CONFIRM"
+                    message = if (ok) {
+                        context.getString(R.string.gpio_confirmed)
+                    } else {
+                        context.getString(R.string.gpio_confirm_failed)
+                    }
                 )
             }
         }
     }
 
+    // ---- Step 2 Color ----
+
     fun testColor() {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
-            transport.colorValue(_uiState.value.colorOrder)
-            _uiState.update { it.copy(isBusy = false, message = "COLOR_VALUE ارسال شد") }
+            transport.colorValue(_uiState.value.colorOrder.coerceIn(0, 5))
+            _uiState.update {
+                it.copy(
+                    isBusy = false,
+                    message = context.getString(R.string.color_value_sent)
+                )
+            }
         }
     }
 
@@ -131,22 +182,35 @@ class ProvisionViewModel @Inject constructor(
                 it.copy(
                     isBusy = false,
                     currentStep = if (ok) ProvisionStep.LENGTH else it.currentStep,
-                    message = if (ok) "Color تأیید شد" else "خطا در COLOR_CONFIRM"
+                    message = if (ok) {
+                        context.getString(R.string.color_confirmed)
+                    } else {
+                        context.getString(R.string.color_confirm_failed)
+                    }
                 )
             }
         }
     }
 
+    // ---- Step 3 Length ----
+
     fun testLength() {
         val len = _uiState.value.lengthValue.toIntOrNull()
         if (len == null || len !in 1..300) {
-            _uiState.update { it.copy(message = "طول باید 1 تا 300 باشد") }
+            _uiState.update {
+                it.copy(message = context.getString(R.string.length_range_error))
+            }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             transport.lengthValue(len)
-            _uiState.update { it.copy(isBusy = false, message = "LENGTH_VALUE ارسال شد") }
+            _uiState.update {
+                it.copy(
+                    isBusy = false,
+                    message = context.getString(R.string.length_value_sent)
+                )
+            }
         }
     }
 
@@ -157,57 +221,37 @@ class ProvisionViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isBusy = false,
-                    // روز ۹: برو به OUTPUT
                     currentStep = if (ok) ProvisionStep.OUTPUT else it.currentStep,
-                    message = if (ok) "Length تأیید شد" else "خطا در LENGTH_CONFIRM"
+                    message = if (ok) {
+                        context.getString(R.string.length_confirmed)
+                    } else {
+                        context.getString(R.string.length_confirm_failed)
+                    }
                 )
             }
         }
     }
 
-    fun cancel() {
-        viewModelScope.launch {
-            transport.cancelProvision()
-            _uiState.update {
-                ProvisionUiState(bluetoothConnected = it.bluetoothConnected)
-            }
-        }
-    }
-
-    fun onCctWarmChange(v: String) {
-        _uiState.update {
-            it.copy(cctWarmGpio = v.filter { c -> c.isDigit() }.take(3))
-        }
-    }
-
-    fun onCctCoolChange(v: String) {
-        _uiState.update {
-            it.copy(cctCoolGpio = v.filter { c -> c.isDigit() }.take(3))
-        }
-    }
-
-    fun onStoreNodeIdChange(v: String) {
-        _uiState.update {
-            it.copy(storeNodeId = v.filter { c -> c.isDigit() }.take(3))
-        }
-    }
-fun onStoreNodeNameChange(v: String) {
-        _uiState.update {
-            it.copy(storeNodeName = v)
-        }
-    }
+    // ---- Step 4 Output (CCT pins) ----
 
     fun testOutput() {
         val warm = _uiState.value.cctWarmGpio.toIntOrNull()
         val cool = _uiState.value.cctCoolGpio.toIntOrNull()
         if (warm == null || cool == null || warm !in 0..255 || cool !in 0..255) {
-            _uiState.update { it.copy(message = context.getString(R.string.cct_0_255)) }
+            _uiState.update {
+                it.copy(message = context.getString(R.string.cct_pins_range_error))
+            }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             transport.outputValue(warm, cool)
-            _uiState.update { it.copy(isBusy = false, message = context.getString(R.string.output_value)) }
+            _uiState.update {
+                it.copy(
+                    isBusy = false,
+                    message = context.getString(R.string.output_value_sent)
+                )
+            }
         }
     }
 
@@ -219,43 +263,70 @@ fun onStoreNodeNameChange(v: String) {
                 it.copy(
                     isBusy = false,
                     currentStep = if (ok) ProvisionStep.STORE else it.currentStep,
-                    message = if (ok) context.getString(R.string.output) else context.getString(R.string.output_confirm)
+                    message = if (ok) {
+                        context.getString(R.string.output_confirmed)
+                    } else {
+                        context.getString(R.string.output_confirm_failed)
+                    }
                 )
             }
         }
     }
 
-    /** اگر نود CCT ندارد می‌توانی مستقیم بروی Store */
+    /** No CCT on node → go to Store without OUTPUT_VALUE. */
     fun skipOutput() {
         _uiState.update {
-            it.copy(currentStep = ProvisionStep.STORE, message = "CCT رد شد")
+            it.copy(
+                currentStep = ProvisionStep.STORE,
+                message = context.getString(R.string.cct_skipped)
+            )
         }
     }
 
+    // ---- Step 5 Store ----
+
     fun storeAndFinish(onFinished: () -> Unit = {}) {
         val id = _uiState.value.storeNodeId.toIntOrNull()
-        val name = _uiState.value.storeNodeName
+        val name = _uiState.value.storeNodeName.trim()
+            .ifBlank { "Node${_uiState.value.storeNodeId}" }
+
         if (id == null || id !in 1..250) {
-            _uiState.update { it.copy(message = "Node ID باید 1 تا 250 باشد") }
+            _uiState.update {
+                it.copy(message = context.getString(R.string.node_id_range_error))
+            }
             return
         }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             val ok = transport.storeValue(id)
             _uiState.update {
                 it.copy(
                     isBusy = false,
-                    message = if (ok) "نود #$id ذخیره شد ✓" else "خطا در STORE_VALUE",
-                    provisionStarted = if (ok) false else it.provisionStarted
+                    provisionStarted = if (ok) false else it.provisionStarted,
+                    message = if (ok) {
+                        context.getString(R.string.node_stored, id)
+                    } else {
+                        context.getString(R.string.store_failed)
+                    }
                 )
             }
             if (ok) {
-                localNodes.cacheList(listOf(NodeListItem(name, id, online = true)))
-                // لیست نودها را تازه کن
+                localNodes.cacheList(
+                    listOf(NodeListItem(nodeName = name, nodeId = id, online = true))
+                )
                 transport.nodeListCmd()
                 onFinished()
             }
+        }
+    }
 
+    fun cancel() {
+        viewModelScope.launch {
+            runCatching { transport.cancelProvision() }
+            _uiState.update {
+                ProvisionUiState(bluetoothConnected = it.bluetoothConnected)
+            }
         }
     }
 }

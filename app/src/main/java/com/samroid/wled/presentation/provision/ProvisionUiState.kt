@@ -5,21 +5,24 @@ data class ProvisionUiState(
     val bluetoothConnected: Boolean = false,
     val provisionStarted: Boolean = false,
     val isBusy: Boolean = false,
+    val isSearching: Boolean = false,
     val message: String? = null,
 
-    // Step 1
+    // Step 1 – GPIO 0..255
     val gpioValue: String = "17",
 
-    // Step 2 — 0=GRB ... 5=GBR
+    // Step 2 – color order 0..5
     val colorOrder: Int = 0,
 
-    // Step 3
+    // Step 3 – length 1..300
     val lengthValue: String = "150",
 
-    // برای روز ۹
+    // Step 4 – CCT pins
     val cctWarmGpio: String = "21",
     val cctCoolGpio: String = "22",
-    val storeNodeId: String = "5",
+
+    // Step 5 – store
+    val storeNodeId: String = "1",
     val storeNodeName: String = ""
 )
 
