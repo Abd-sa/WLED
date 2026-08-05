@@ -1,10 +1,15 @@
 package com.samroid.wled.presentation.provision
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.samroid.wled.R
+import com.samroid.wled.data.repository.LocalNodeRepository
 import com.samroid.wled.data.transport.DeviceTransport
+import com.samroid.wled.domain.model.NodeListItem
 import com.samroid.wled.domain.model.TransportConnectionState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +19,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProvisionViewModel @Inject constructor(
-    private val transport: DeviceTransport
+    private val transport: DeviceTransport,
+    private val localNodes: LocalNodeRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProvisionUiState())
@@ -45,7 +52,9 @@ class ProvisionViewModel @Inject constructor(
                 it.copy(
                     isBusy = false,
                     provisionStarted = ok,
-                    message = if (ok) "PROVISION شروع شد" else "خطا در شروع Provision"
+                    message = if (ok) context.getString(R.string.provision_started) else context.getString(
+                        R.string.provision_failed
+                    )
                 )
             }
         }
@@ -220,6 +229,7 @@ class ProvisionViewModel @Inject constructor(
 
     fun storeAndFinish(onFinished: () -> Unit = {}) {
         val id = _uiState.value.storeNodeId.toIntOrNull()
+        val name = _uiState.value.storeNodeName
         if (id == null || id !in 1..250) {
             _uiState.update { it.copy(message = "Node ID باید 1 تا 250 باشد") }
             return
@@ -235,10 +245,12 @@ class ProvisionViewModel @Inject constructor(
                 )
             }
             if (ok) {
+                localNodes.cacheList(listOf(NodeListItem(name, id, online = true)))
                 // لیست نودها را تازه کن
                 transport.nodeListCmd()
                 onFinished()
             }
+
         }
     }
 }

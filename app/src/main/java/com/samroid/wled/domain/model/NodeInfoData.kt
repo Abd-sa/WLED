@@ -2,6 +2,7 @@ package com.samroid.wled.domain.model
 
 data class NodeInfoData(
     val nodeId: Int,
+    val nodeName: String,
     val deviceId: String,
     val ip: String,
     val rssi: Int,

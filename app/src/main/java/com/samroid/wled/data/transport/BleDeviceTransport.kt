@@ -2,6 +2,7 @@ package com.samroid.wled.data.transport
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import com.samroid.wled.R
 import com.samroid.wled.data.transport.ble.BleManager
@@ -19,12 +20,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+
 /**
  * آداپتر: DeviceTransport ← BleManager
  * UI / ViewModel فقط با DeviceTransport کار می‌کنند.
  */
 class BleDeviceTransport(
-    context: Context
+    private val context: Context
 ) : DeviceTransport {
 
     private val ble = BleManager(context)
@@ -36,6 +38,7 @@ class BleDeviceTransport(
     // ---------- map StateFlowهای BleManager به DeviceTransport ----------
 
     private val _devices = MutableStateFlow<List<TransportDevice>>(emptyList())
+
     override val devices: StateFlow<List<TransportDevice>> = _devices.asStateFlow()
 
     private val _Transport_connectionState = MutableStateFlow(TransportConnectionState.DISCONNECTED)
@@ -48,6 +51,8 @@ class BleDeviceTransport(
     override val nodeList: StateFlow<List<NodeListItem>> = ble.nodeList
     override val nodeInfo: StateFlow<NodeInfoData?> = ble.nodeInfo
     override val controllerInfo: StateFlow<ControllerInfo?> = ble.controllerInfo
+
+
 
     init {
         // همگام‌سازی لیست دستگاه‌ها
@@ -96,13 +101,32 @@ class BleDeviceTransport(
     override fun stopScan() = ble.stopScan()
 
     override fun connect(deviceId: String) {
-        val device = deviceMap[deviceId]
-        if (device == null) {
-            // اگر از قبل در map نبود، ممکن است address مستقیم داده شده باشد
-            // در این حالت فقط لاگ — اسکن دوباره لازم است
+        // ۱) اگر از اسکن در map هست
+        deviceMap[deviceId]?.let { device ->
+            ble.connect(device)
             return
         }
-        ble.connect(device)
+
+        val adapter = try {
+            val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+            manager?.adapter
+        } catch (_: Exception) {
+            null
+        }
+
+        if (adapter == null) {
+            return
+        }
+
+        try {
+            val remote = adapter.getRemoteDevice(deviceId)
+            deviceMap[deviceId] = remote
+            ble.connect(remote)
+        } catch (_: IllegalArgumentException) {
+            // MAC نامعتبر
+        } catch (_: Exception) {
+            // خطای دیگر
+        }
     }
 
     override fun disconnect() = ble.disconnect()

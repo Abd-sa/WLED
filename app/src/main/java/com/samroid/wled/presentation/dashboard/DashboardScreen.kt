@@ -153,11 +153,10 @@ fun DashboardContent(
                         title = stringResource(R.string.bluetooth),
                         subtitle = state.bluetoothName,
                         connected = state.bluetoothState == TransportConnectionState.CONNECTED,
-                        statusText = when (state.bluetoothState) {
-                            TransportConnectionState.CONNECTED -> stringResource(R.string.connected)
-                            TransportConnectionState.CONNECTING -> stringResource(R.string.connecting)
-                            TransportConnectionState.ERROR -> stringResource(R.string.error)
-                            TransportConnectionState.DISCONNECTED -> stringResource(R.string.disconnected)
+                        statusText = when {
+                            state.isAutoConnecting -> stringResource(R.string.connecting)
+                            state.bluetoothState == TransportConnectionState.CONNECTED -> stringResource(R.string.connected)
+                            else -> stringResource(R.string.disconnected)
                         },
                         onClick = onOpenBluetooth
                     )

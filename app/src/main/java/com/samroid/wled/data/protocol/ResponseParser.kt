@@ -50,7 +50,7 @@ object ResponseParser {
             if (i + 1 >= payload.size) return@repeat
             val id = payload[i].toInt() and 0xFF
             val online = payload[i + 1].toInt() and 0xFF == 1
-            list.add(NodeListItem(id, online))
+            list.add(NodeListItem("",id, online))
             i += 2
         }
         return list
@@ -112,7 +112,8 @@ object ResponseParser {
             udpEnabled = udpEnabled,
             processorId = processorId,
             startPixel = startPixel,
-            endPixel = endPixel
+            endPixel = endPixel,
+            nodeName = ""
         )
     }
 }

@@ -15,5 +15,6 @@ data class DashboardUiState(
     val ambientEnabled: Boolean = false,
     val ambientEndpoint: String = "192.168.1.255:7777",
     val isRefreshingNodes: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val isAutoConnecting: Boolean = false
 )

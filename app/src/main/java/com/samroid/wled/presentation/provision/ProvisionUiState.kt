@@ -19,7 +19,8 @@ data class ProvisionUiState(
     // برای روز ۹
     val cctWarmGpio: String = "21",
     val cctCoolGpio: String = "22",
-    val storeNodeId: String = "5"
+    val storeNodeId: String = "5",
+    val storeNodeName: String = ""
 )
 
 val COLOR_ORDERS = listOf(

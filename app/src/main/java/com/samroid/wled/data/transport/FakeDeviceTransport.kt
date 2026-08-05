@@ -309,7 +309,7 @@ class FakeDeviceTransport : DeviceTransport {
             endPixel = 99
         )
         provisionActive = false
-        _nodeList.value = nodes.map { (id, n) -> NodeListItem(id, n.online) }
+        _nodeList.value = nodes.map { (id, n) -> NodeListItem("",id, n.online) }
         addLog("STORE_VALUE nodeId=$nodeId Saved.")
         return emitAck("ACK ✓ STORE_VALUE #$nodeId")
     }
@@ -326,7 +326,7 @@ class FakeDeviceTransport : DeviceTransport {
     override suspend fun nodeListCmd(): Boolean {
         if (!ensureConnected()) return false
         latency()
-        val list = nodes.map { (id, n) -> NodeListItem(id, n.online) }
+        val list = nodes.map { (id, n) -> NodeListItem("",id, n.online) }
         _nodeList.value = list
         val resp = DeviceResponse.NodeList(nextSeq(), list)
         _lastDeviceResponse.value = resp
@@ -350,7 +350,8 @@ class FakeDeviceTransport : DeviceTransport {
             udpEnabled = n.udpEnabled,
             processorId = n.processorId,
             startPixel = n.startPixel,
-            endPixel = n.endPixel
+            endPixel = n.endPixel,
+            nodeName = ""
         )
         _nodeInfo.value = info
         val resp = DeviceResponse.NodeInfo(nextSeq(), info)

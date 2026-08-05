@@ -162,8 +162,10 @@ class BleManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun connect(device: BluetoothDevice) {
+
         stopScan()
-        disconnect()
+
+
         _Transport_connectionState.value = TransportConnectionState.CONNECTING
         addLog("Connecting to ${device.name ?: device.address} ...")
 

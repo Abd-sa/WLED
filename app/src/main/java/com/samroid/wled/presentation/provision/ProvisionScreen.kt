@@ -406,10 +406,21 @@ private fun StepStore(
     Spacer(Modifier.height(24.dp))
 
     OutlinedTextField(
+        value = state.storeNodeName,
+        onValueChange = onNodeIdChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(stringResource(R.string.node_name)) },
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp),
+        colors = fieldColors()
+    )
+    Spacer(Modifier.height(24.dp))
+
+    OutlinedTextField(
         value = state.storeNodeId,
         onValueChange = onNodeIdChange,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("Node ID (1–250)") },
+        label = { Text(stringResource(R.string.node_id_1_250)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         shape = RoundedCornerShape(12.dp),
@@ -511,7 +522,7 @@ private fun TestConfirmRow(
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            Text("Confirm", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.confirm), fontWeight = FontWeight.SemiBold)
         }
     }
 }
