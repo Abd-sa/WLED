@@ -2,7 +2,6 @@ package com.samroid.wled.presentation.ambilight
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,37 +14,53 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samroid.wled.R
-
 import com.samroid.wled.presentation.theme.AppColors.Brand.Green
-
-
 
 @Composable
 fun AmbilightScreen(
     onRequestProjection: () -> Unit,
+    projectionResultCode: Int? = null,
+    projectionData: android.content.Intent? = null,
+    projectionDenied: Boolean = false,
     viewModel: AmbilightViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.needsProjection) {
+        if (state.needsProjection) onRequestProjection()
+    }
+
+    LaunchedEffect(projectionResultCode, projectionData) {
+        if (projectionResultCode != null && projectionData != null) {
+            viewModel.onProjectionGranted(projectionResultCode, projectionData)
+        }
+    }
+
+    LaunchedEffect(projectionDenied) {
+        if (projectionDenied) viewModel.onProjectionDenied()
+    }
 
     Column(
         modifier = Modifier
@@ -55,147 +70,201 @@ fun AmbilightScreen(
             .padding(20.dp)
     ) {
         Text(
-            "Ambient Light",
+            stringResource(R.string.wled_ambient_light),
             color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineMedium
         )
 
+        Spacer(Modifier.height(12.dp))
+
+        Text(
+            text = if (state.bluetoothConnected) {
+                stringResource(R.string.connected)
+            } else {
+                stringResource(R.string.bluetooth_is_not_connected)
+            },
+            color = if (state.bluetoothConnected) Green else MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium
+        )
+
         Spacer(Modifier.height(16.dp))
 
-        // پیش‌نمایش تزئینی (روز ۱۲ فریم واقعی)
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(160.dp)
-//                .clip(RoundedCornerShape(18.dp))
-//                .background(
-//                    Brush.horizontalGradient(
-//                        listOf(Color(0xFF3F51B5), Color(0xFF9C27B0), Color(0xFFFF5722))
-//                    )
-//                ),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Text(
-//                if (state.isRunning) "Streaming…" else "Preview",
-//                color = Color.White.copy(alpha = 0.9f),
-//                fontWeight = FontWeight.Medium
-//            )
-//        }
-        Button(modifier = Modifier
-            .fillMaxWidth()
-            .height(160.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(Color(0xFF3F51B5), Color(0xFF9C27B0), Color(0xFFFF5722))
-                )
-            ),
-            onClick = {
-            if (state.isRunning) viewModel.stop()
-            else onRequestProjection()
-        }){
-            Text(
-                if (state.isRunning) "Streaming…" else "Preview",
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f),
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        Spacer(Modifier.height(18.dp))
-
+        // Protocol
         SettingsCard {
-            Label(stringResource(R.string.capture_source))
+            Label(stringResource(R.string.ambient_protocol))
             ChipRow(
-                options = SOURCE_OPTIONS,
-                selected = state.captureSource,
-                onSelect = viewModel::setCaptureSource
+                options = PROTOCOL_OPTIONS,
+                selected = state.protocol,
+                onSelect = viewModel::setProtocol
             )
-
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
+            Label(stringResource(R.string.ambient_color_order))
+            ChipRow(
+                options = COLOR_ORDER_OPTIONS,
+                selected = state.colorOrder,
+                onSelect = viewModel::setColorOrder
+            )
+            Spacer(Modifier.height(12.dp))
             Label(stringResource(R.string.fps))
             ChipRow(
                 options = FPS_OPTIONS.map { it.toString() },
                 selected = state.fps.toString(),
                 onSelect = { viewModel.setFps(it.toInt()) }
             )
-
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
             Label(stringResource(R.string.quality))
             ChipRow(
                 options = QUALITY_OPTIONS,
                 selected = state.quality,
                 onSelect = viewModel::setQuality
             )
-
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Label(stringResource(R.string.smoothing))
-                Text(
-                    "${state.smoothing.toInt()}%",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.titleSmall
+                Text(stringResource(R.string.ambient_smoothing), color = MaterialTheme.colorScheme.onBackground)
+                Switch(
+                    checked = state.smoothingEnabled,
+                    onCheckedChange = viewModel::setSmoothingEnabled
                 )
             }
-            Slider(
-                value = state.smoothing,
-                onValueChange = viewModel::setSmoothing,
-                valueRange = 0f..100f,
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.onPrimary.copy(0.1f)
+            if (state.smoothingEnabled) {
+                Text(
+                    "${state.smoothingPercent.toInt()}%",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
                 )
-            )
+                Slider(
+                    value = state.smoothingPercent,
+                    onValueChange = viewModel::setSmoothingPercent,
+                    valueRange = 0f..100f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.ambient_average_color), color = MaterialTheme.colorScheme.onBackground)
+                Switch(
+                    checked = state.averageColor,
+                    onCheckedChange = viewModel::setAverageColor
+                )
+            }
         }
 
         Spacer(Modifier.height(12.dp))
 
+        // Targets from nodes
         SettingsCard {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(stringResource(R.string.target), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    Text(
-                        "${state.targetHost}:${state.targetPort}",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
                 Text(
-                    if (state.isRunning) stringResource(R.string.running) else stringResource(R.string.idle),
-                    color = if (state.isRunning) Green else MaterialTheme.colorScheme.onSurfaceVariant,
+                    stringResource(R.string.nodes),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                TextButton(
+                    onClick = viewModel::refreshTargets,
+                    enabled = state.bluetoothConnected && !state.isLoadingTargets
+                ) {
+                    Text(stringResource(R.string.refresh))
+                }
+            }
+
+            if (state.isLoadingTargets) {
+                CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+            }
+
+            if (state.targets.isEmpty() && !state.isLoadingTargets) {
+                Text(
+                    stringResource(R.string.for_seeing_nodes_bluetooth_must_be_connected),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
+            }
+
+            state.targets.forEach { t ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = t.selected,
+                        onCheckedChange = { viewModel.toggleTarget(t.nodeId) },
+                        enabled = t.ip.isNotBlank()
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "${t.name} (#${t.nodeId})",
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = buildString {
+                                append(if (t.ip.isBlank()) "No IP" else t.ip)
+                                append(" · ")
+                                append(if (t.online) "Online" else "Offline")
+                                append(" · LEDs ${t.startPixel}–${t.endPixel}")
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
 
         if (!state.message.isNullOrBlank()) {
             Spacer(Modifier.height(10.dp))
-            Text(state.message.orEmpty(), color = Green, style = MaterialTheme.typography.titleSmall)
+            Text(
+                state.message.orEmpty(),
+                color = Green,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
 
         Spacer(Modifier.height(20.dp))
 
         Button(
-            onClick = viewModel::toggle,
+            onClick = viewModel::onStartClicked,
+            enabled = !state.isPreparing,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (state.isRunning) Color(0xFFC62828) else MaterialTheme.colorScheme.primary
+                containerColor = if (state.isRunning) Color(0xFFC62828)
+                else MaterialTheme.colorScheme.primary
             )
         ) {
-            Text(
-                if (state.isRunning) "Stop" else "Start",
-                style = MaterialTheme.typography.titleMedium
-            )
+            if (state.isPreparing) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.height(24.dp)
+                )
+            } else {
+                Text(
+                    if (state.isRunning) stringResource(R.string.ambient_stop)
+                    else stringResource(R.string.ambient_start),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
         }
+
+        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -206,9 +275,7 @@ private fun SettingsCard(content: @Composable () -> Unit) {
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
             .padding(16.dp)
-    ) {
-        content()
-    }
+    ) { content() }
 }
 
 @Composable

@@ -2,6 +2,7 @@ package com.samroid.wled.presentation.navigation
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,7 +24,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -160,29 +163,39 @@ fun AppRoot(appUiState: AppUiState) {
                 UdpScreen()
             }
             composable(Routes.AMBILIGHT) {
-                val context = LocalContext.current
-                val viewModel: AmbilightViewModel = hiltViewModel()
+                var projectionCode by remember { mutableStateOf<Int?>(null) }
+                var projectionData by remember { mutableStateOf<Intent?>(null) }
+                var projectionDenied by remember { mutableStateOf(false) }
 
-                val mpm = remember {
-                    context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                }
-
-                val projectionLauncher = rememberLauncherForActivityResult (
+                val projectionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.StartActivityForResult()
                 ) { result ->
                     if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                        MediaProjectionHolder.projection =
-                            mpm.getMediaProjection(result.resultCode, result.data!!)
-                        viewModel.start()
+                        projectionDenied = false
+                        projectionCode = result.resultCode
+                        projectionData = result.data
+                    } else {
+                        projectionDenied = true
+                        projectionCode = null
+                        projectionData = null
                     }
                 }
 
+                val mpm = LocalContext.current.getSystemService(MediaProjectionManager::class.java)
+
                 AmbilightScreen(
                     onRequestProjection = {
+                        projectionDenied = false
+                        projectionCode = null
+                        projectionData = null
                         projectionLauncher.launch(mpm.createScreenCaptureIntent())
                     },
-                    viewModel = viewModel
+                    projectionResultCode = projectionCode,
+                    projectionData = projectionData,
+                    projectionDenied = projectionDenied
                 )
+
+
             }
             composable(Routes.SETTINGS) {
                 PlaceholderScreen("Settings")
