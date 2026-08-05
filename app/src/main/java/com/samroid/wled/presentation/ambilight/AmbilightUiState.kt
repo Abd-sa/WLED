@@ -26,7 +26,6 @@ data class AmbilightUiState(
     val smoothingPercent: Float = 50f,
     val averageColor: Boolean = false,
 
-    // Layout (T/R/B/L) — start always bottom-center per employer
     val ledTop: Int = 60,
     val ledRight: Int = 34,
     val ledBottom: Int = 60,
@@ -42,11 +41,11 @@ val QUALITY_OPTIONS = listOf("Low", "Medium", "High", "Ultra")
 val PROTOCOL_OPTIONS = listOf("DDP", "UDP_RAW")
 val COLOR_ORDER_OPTIONS = listOf("RGB", "RBG", "GRB", "GBR", "BRG", "BGR")
 
-fun qualityToPx(q: String) = when (q) {
+fun qualityToPx(q: String): Int = when (q) {
     "Low" -> 64
     "High" -> 256
     "Ultra" -> 512
     else -> 128
 }
 
-fun protocolDefaultPort(p: String) = if (p == "UDP_RAW") 19446 else 4048
+fun protocolDefaultPort(p: String): Int = if (p == "UDP_RAW") 19446 else 4048

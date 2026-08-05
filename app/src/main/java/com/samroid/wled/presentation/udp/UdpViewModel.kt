@@ -38,19 +38,18 @@ class UdpViewModel @Inject constructor(
         viewModelScope.launch {
             transport.nodeList.collect { list ->
                 _uiState.update { current ->
-                    val mapped = list.map { n ->
-                        val old = current.nodes.find { it.nodeId == n.nodeId }
-                        old?.copy(
-                            name = n.nodeName.ifBlank { "Node${n.nodeId}" },
-                        ) ?: UdpNodeMapUi(
-                            nodeId = n.nodeId,
-                            name = n.nodeName.ifBlank { "Node${n.nodeId}" },
-                            endPixel = "99"
-                        )
-                    }
-                    current.copy(nodes = mapped)
+                    current.copy(
+                        nodes = list.map { n ->
+                            val old = current.nodes.find { it.nodeId == n.nodeId }
+                            old?.copy(name = n.nodeName.ifBlank { "Node${n.nodeId}" })
+                                ?: UdpNodeMapUi(
+                                    nodeId = n.nodeId,
+                                    name = n.nodeName.ifBlank { "Node${n.nodeId}" },
+                                    endPixel = "99"
+                                )
+                        }
+                    )
                 }
-                // Enrich IP / map from NODE_INFO
                 if (list.isNotEmpty() && _uiState.value.bluetoothConnected) {
                     enrichFromNodeInfo(list.map { it.nodeId })
                 }
@@ -83,18 +82,13 @@ class UdpViewModel @Inject constructor(
                     }
                 )
             }
-            delay(60)
+            delay(50)
         }
     }
 
     fun refreshNodes() {
         viewModelScope.launch {
-            if (!_uiState.value.bluetoothConnected) {
-                _uiState.update {
-                    it.copy(message = context.getString(R.string.bluetooth_is_not_connected))
-                }
-                return@launch
-            }
+            if (!_uiState.value.bluetoothConnected) return@launch
             transport.nodeListCmd()
         }
     }
@@ -108,24 +102,19 @@ class UdpViewModel @Inject constructor(
                     isBusy = false,
                     streamEnabled = if (ok) enabled else it.streamEnabled,
                     message = if (ok) {
-                        if (enabled) context.getString(R.string.udp_stream_on)
-                        else context.getString(R.string.udp_stream_off)
-                    } else context.getString(R.string.udp_stream_failed)
+                        if (enabled) "UDP stream ON" else "UDP stream OFF"
+                    } else "UDP_STREAM_ENABLE failed"
                 )
             }
         }
     }
 
     fun onStartPixelChange(nodeId: Int, value: String) {
-        updateNode(nodeId) {
-            it.copy(startPixel = value.filter { c -> c.isDigit() }.take(3))
-        }
+        updateNode(nodeId) { it.copy(startPixel = value.filter { c -> c.isDigit() }.take(3)) }
     }
 
     fun onEndPixelChange(nodeId: Int, value: String) {
-        updateNode(nodeId) {
-            it.copy(endPixel = value.filter { c -> c.isDigit() }.take(3))
-        }
+        updateNode(nodeId) { it.copy(endPixel = value.filter { c -> c.isDigit() }.take(3)) }
     }
 
     fun onProcessorChange(nodeId: Int, processorId: Int) {
@@ -139,9 +128,7 @@ class UdpViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isBusy = false,
-                    message = if (ok) {
-                        context.getString(R.string.udp_map_set_ok, nodeId)
-                    } else context.getString(R.string.udp_map_set_failed, nodeId)
+                    message = if (ok) "UDP_MAP_SET #$nodeId" else "MAP failed #$nodeId"
                 )
             }
         }
@@ -150,19 +137,16 @@ class UdpViewModel @Inject constructor(
     fun toggleNodeUdp(nodeId: Int, enabled: Boolean) {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
-            val ok = if (enabled) {
-                applyMap(nodeId) && transport.udpStart(nodeId)
-            } else {
-                transport.udpStop(nodeId)
-            }
+            val ok = if (enabled) applyMap(nodeId) && transport.udpStart(nodeId)
+            else transport.udpStop(nodeId)
             if (ok) updateNode(nodeId) { it.copy(enabled = enabled) }
             _uiState.update {
                 it.copy(
                     isBusy = false,
                     message = when {
-                        !ok -> context.getString(R.string.udp_node_failed, nodeId)
-                        enabled -> context.getString(R.string.udp_node_started, nodeId)
-                        else -> context.getString(R.string.udp_node_stopped, nodeId)
+                        !ok -> "UDP failed #$nodeId"
+                        enabled -> "UDP started #$nodeId"
+                        else -> "UDP stopped #$nodeId"
                     }
                 )
             }
@@ -178,8 +162,8 @@ class UdpViewModel @Inject constructor(
     }
 
     private fun updateNode(nodeId: Int, block: (UdpNodeMapUi) -> UdpNodeMapUi) {
-        _uiState.update { state ->
-            state.copy(nodes = state.nodes.map { if (it.nodeId == nodeId) block(it) else it })
+        _uiState.update { s ->
+            s.copy(nodes = s.nodes.map { if (it.nodeId == nodeId) block(it) else it })
         }
     }
 }

@@ -131,6 +131,7 @@ class NodeControlViewModel @Inject constructor(
         }
     }
 
+
     fun setRgbEffectIntensity(value: Float) {
         _uiState.update { it.copy(rgbEffectIntensity = value.coerceIn(0f, 255f)) }
     }
@@ -183,6 +184,8 @@ class NodeControlViewModel @Inject constructor(
             )
         }
     }
+
+
 
     fun setCctEffectId(id: Int) {
         val v = id.coerceIn(0, 159)

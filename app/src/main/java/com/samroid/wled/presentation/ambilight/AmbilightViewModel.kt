@@ -56,7 +56,7 @@ class AmbilightViewModel @Inject constructor(
             }
             _uiState.update { it.copy(isLoadingTargets = true, message = null) }
             transport.nodeListCmd()
-            delay(300)
+            delay(250)
             loadTargetDetails(transport.nodeList.value.map { it.nodeId to it.online })
             _uiState.update { it.copy(isLoadingTargets = false) }
         }
@@ -83,7 +83,7 @@ class AmbilightViewModel @Inject constructor(
                 processorId = info?.processorId ?: prev?.processorId ?: 0,
                 ledCount = info?.ledCount ?: prev?.ledCount ?: 0
             )
-            delay(80)
+            delay(60)
         }
         _uiState.update { it.copy(targets = built) }
     }
@@ -93,9 +93,9 @@ class AmbilightViewModel @Inject constructor(
     fun setFps(v: Int) = _uiState.update { it.copy(fps = v) }
     fun setQuality(v: String) = _uiState.update { it.copy(quality = v) }
     fun setSmoothingEnabled(v: Boolean) = _uiState.update { it.copy(smoothingEnabled = v) }
-    fun setSmoothingPercent(v: Float) = _uiState.update { it.copy(smoothingPercent = v.coerceIn(0f, 100f)) }
+    fun setSmoothingPercent(v: Float) =
+        _uiState.update { it.copy(smoothingPercent = v.coerceIn(0f, 100f)) }
     fun setAverageColor(v: Boolean) = _uiState.update { it.copy(averageColor = v) }
-
     fun setLedTop(v: Int) = _uiState.update { it.copy(ledTop = v.coerceIn(0, 300)) }
     fun setLedRight(v: Int) = _uiState.update { it.copy(ledRight = v.coerceIn(0, 300)) }
     fun setLedBottom(v: Int) = _uiState.update { it.copy(ledBottom = v.coerceIn(0, 300)) }
@@ -112,17 +112,35 @@ class AmbilightViewModel @Inject constructor(
     fun onStartClicked() {
         val s = _uiState.value
         if (s.isRunning) {
-            stop(); return
+            stop()
+            return
         }
         if (!s.bluetoothConnected) {
             _uiState.update { it.copy(message = "Connect Bluetooth first") }
             return
         }
         if (s.targets.none { it.selected && it.ip.isNotBlank() }) {
-            _uiState.update { it.copy(message = "Select at least one node with IP") }
+            _uiState.update { it.copy(message = "Select at least one node with IP (Refresh)") }
             return
         }
+        // Ask UI for MediaProjection (real device). On Fake you can call startFakeUdpOnly().
         _uiState.update { it.copy(needsProjection = true, message = null) }
+    }
+
+    /** Fake / no hardware: UDP_STREAM + MAP + START without screen capture. */
+    fun startFakeUdpOnly() {
+        viewModelScope.launch {
+            val ok = prepareUdpCommands()
+            if (ok) {
+                _uiState.update {
+                    it.copy(
+                        isRunning = true,
+                        isPreparing = false,
+                        message = "Fake OK: UDP pipeline ready (no screen capture)"
+                    )
+                }
+            }
+        }
     }
 
     fun onProjectionGranted(resultCode: Int, data: Intent) {
@@ -135,35 +153,53 @@ class AmbilightViewModel @Inject constructor(
     fun onProjectionDenied() {
         pendingResultCode = null
         pendingData = null
-        _uiState.update { it.copy(needsProjection = false, message = "Screen capture denied") }
+        _uiState.update {
+            it.copy(
+                needsProjection = false,
+                message = "Screen capture denied — use Fake UDP only if testing without device"
+            )
+        }
     }
 
-    private suspend fun prepareUdpAndStartService() {
+    private suspend fun prepareUdpCommands(): Boolean {
         val s = _uiState.value
         val selected = s.targets.filter { it.selected && it.ip.isNotBlank() }
         if (selected.isEmpty()) {
-            _uiState.update { it.copy(message = "No valid targets") }
-            return
+            _uiState.update { it.copy(isPreparing = false, message = "No valid targets") }
+            return false
         }
-
-        _uiState.update { it.copy(isPreparing = true, message = "Enabling UDP…") }
+        _uiState.update { it.copy(isPreparing = true, message = "UDP_STREAM_ENABLE…") }
 
         if (!transport.udpStreamEnable(true)) {
             _uiState.update { it.copy(isPreparing = false, message = "UDP_STREAM_ENABLE failed") }
-            return
+            return false
         }
-
         for (t in selected) {
-            if (!transport.udpMapSet(t.nodeId, t.processorId.coerceIn(0, 1), t.startPixel, t.endPixel)) {
-                _uiState.update { it.copy(isPreparing = false, message = "UDP_MAP_SET failed #${t.nodeId}") }
-                return
+            if (!transport.udpMapSet(
+                    t.nodeId,
+                    t.processorId.coerceIn(0, 1),
+                    t.startPixel.coerceIn(0, 300),
+                    t.endPixel.coerceIn(0, 300)
+                )
+            ) {
+                _uiState.update {
+                    it.copy(isPreparing = false, message = "UDP_MAP_SET failed #${t.nodeId}")
+                }
+                return false
             }
             if (!transport.udpStart(t.nodeId)) {
-                _uiState.update { it.copy(isPreparing = false, message = "UDP_START failed #${t.nodeId}") }
-                return
+                _uiState.update {
+                    it.copy(isPreparing = false, message = "UDP_START failed #${t.nodeId}")
+                }
+                return false
             }
             delay(40)
         }
+        return true
+    }
+
+    private suspend fun prepareUdpAndStartService() {
+        if (!prepareUdpCommands()) return
 
         val code = pendingResultCode
         val data = pendingData
@@ -172,10 +208,13 @@ class AmbilightViewModel @Inject constructor(
             return
         }
 
+        val s = _uiState.value
+        val selected = s.targets.filter { it.selected && it.ip.isNotBlank() }
         val port = protocolDefaultPort(s.protocol)
         val hosts = ArrayList(selected.map { it.ip })
         val starts = selected.map { it.startPixel }.toIntArray()
         val ends = selected.map { it.endPixel }.toIntArray()
+        val alpha = (1f - s.smoothingPercent / 100f).coerceIn(0.05f, 1f)
 
         AmbilightService.start(
             context = getApplication(),
@@ -188,7 +227,7 @@ class AmbilightViewModel @Inject constructor(
             fps = s.fps,
             quality = qualityToPx(s.quality),
             smoothing = s.smoothingEnabled,
-            smoothAlpha = 1f - (s.smoothingPercent / 100f).coerceIn(0.05f, 0.95f),
+            smoothAlpha = alpha,
             average = s.averageColor,
             ledTop = s.ledTop,
             ledRight = s.ledRight,
@@ -217,6 +256,8 @@ class AmbilightViewModel @Inject constructor(
         }
         pendingResultCode = null
         pendingData = null
-        _uiState.update { it.copy(isRunning = false, isPreparing = false, message = "Ambient stopped") }
+        _uiState.update {
+            it.copy(isRunning = false, isPreparing = false, message = "Ambient stopped")
+        }
     }
 }

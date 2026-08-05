@@ -55,22 +55,14 @@ class ProvisionViewModel @Inject constructor(
             val ok = transport.provision()
             if (!ok) {
                 _uiState.update {
-                    it.copy(
-                        isBusy = false,
-                        isSearching = false,
-                        message = context.getString(R.string.provision_failed)
-                    )
+                    it.copy(isBusy = false, message = context.getString(R.string.provision_failed))
                 }
                 return@launch
             }
-
-            // Optional scan for new WLED node (employer flow)
             runCatching { transport.scanWled() }
-
             _uiState.update {
                 it.copy(
                     isBusy = false,
-                    isSearching = false,
                     provisionStarted = true,
                     currentStep = ProvisionStep.GPIO,
                     message = context.getString(R.string.provision_started)
