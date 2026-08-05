@@ -22,11 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samroid.wled.R
@@ -76,19 +73,19 @@ fun NodeInfoScreen(
         Spacer(Modifier.height(16.dp))
 
         InfoSection(title = "Information") {
-            InfoRow(stringResource(R.string.node_id), "${state.nodeId}")
-            InfoRow(stringResource(R.string.device_id), info?.deviceId ?: stringResource(R.string.empt_dash))
-            InfoRow(stringResource(R.string.ip_address), info?.ip ?: stringResource(R.string.empt_dash))
-            InfoRow(stringResource(R.string.rssi), info?.let { "${it.rssi} dBm" } ?: stringResource(R.string.empt_dash))
-            InfoRow(stringResource(R.string.led_count), info?.ledCount?.toString() ?: stringResource(R.string.empt_dash))
+            InfoRow(stringResource(R.string.nodeid), "${state.nodeId}")
+            InfoRow(stringResource(R.string.device_id), info?.deviceId ?: stringResource(R.string.empty_dash))
+            InfoRow(stringResource(R.string.ip_address), info?.ip ?: stringResource(R.string.empty_dash))
+            InfoRow(stringResource(R.string.rssi), info?.let { "${it.rssi} dBm" } ?: stringResource(R.string.empty_dash))
+            InfoRow(stringResource(R.string.led_count), info?.ledCount?.toString() ?: stringResource(R.string.empty_dash))
             InfoRow(stringResource(R.string.cct_enabled), info?.let { if (it.cctEnabled) stringResource(
                 R.string.yes
             ) else stringResource(R.string.no)
-            } ?: stringResource(R.string.empt_dash))
+            } ?: stringResource(R.string.empty_dash))
             InfoRow(stringResource(R.string.udp_enabled), info?.let { if (it.udpEnabled) stringResource(
                 R.string.yes
             ) else stringResource(R.string.no)
-            } ?: stringResource(R.string.empt_dash))
+            } ?: stringResource(R.string.empty_dash))
             InfoRow(
                 stringResource(R.string.processor_id),
                 info?.let {
@@ -96,10 +93,10 @@ fun NodeInfoScreen(
                         R.string.copy
                     )
                     "${it.processorId} ($name)"
-                } ?: stringResource(R.string.empt_dash)
+                } ?: stringResource(R.string.empty_dash)
             )
-            InfoRow(stringResource(R.string.start_pixel), info?.startPixel?.toString() ?: stringResource(R.string.empt_dash))
-            InfoRow(stringResource(R.string.end_pixel), info?.endPixel?.toString() ?: stringResource(R.string.empt_dash))
+            InfoRow(stringResource(R.string.start_pixel), info?.startPixel?.toString() ?: stringResource(R.string.empty_dash))
+            InfoRow(stringResource(R.string.end_pixel), info?.endPixel?.toString() ?: stringResource(R.string.empty_dash))
         }
     }
 }

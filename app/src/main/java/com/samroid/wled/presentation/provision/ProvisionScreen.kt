@@ -110,6 +110,7 @@ fun ProvisionScreen(
             ProvisionStep.STORE -> StepStore(
                 state = state,
                 onNodeIdChange = viewModel::onStoreNodeIdChange,
+                onNodeNameChange = viewModel::onStoreNodeNameChange,
                 onStore = { viewModel.storeAndFinish(onFinished) }
             )
         }
@@ -394,6 +395,7 @@ private fun fieldColors() = OutlinedTextFieldDefaults.colors(
 private fun StepStore(
     state: ProvisionUiState,
     onNodeIdChange: (String) -> Unit,
+    onNodeNameChange: (String) -> Unit,
     onStore: () -> Unit
 ) {
     Text("Step 5 – Store", color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleLarge)
@@ -407,7 +409,7 @@ private fun StepStore(
 
     OutlinedTextField(
         value = state.storeNodeName,
-        onValueChange = onNodeIdChange,
+        onValueChange = onNodeNameChange,
         modifier = Modifier.fillMaxWidth(),
         label = { Text(stringResource(R.string.node_name)) },
         singleLine = true,

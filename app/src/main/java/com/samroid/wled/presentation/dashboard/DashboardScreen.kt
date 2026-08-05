@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,7 +44,7 @@ import com.samroid.wled.presentation.theme.AppColors
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.automirrored.outlined.ArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
@@ -168,7 +167,7 @@ fun DashboardContent(
                         title = stringResource(R.string.wifi_master),
                         subtitle = buildString {
                             append(state.wifiSsid)
-                            if (state.wifiIp != stringResource(R.string.empt_dash)) append("\n").append(state.wifiIp)
+                            if (state.wifiIp != stringResource(R.string.empty_dash)) append("\n").append(state.wifiIp)
                         },
                         connected = state.wifiConnected,
                         statusText = if (state.wifiConnected) stringResource(R.string.connected) else stringResource(R.string.disconnected),
@@ -352,8 +351,7 @@ fun ConnectionCard(
                     )
                 }
             }
-
-            Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = AppColors.Text.SecondaryDark)
+            Icon(Icons.AutoMirrored.Outlined.ArrowRight, contentDescription = null, tint = AppColors.Text.SecondaryDark)
         }
     }
 }

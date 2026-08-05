@@ -25,14 +25,13 @@
     <string name="online">Online</string>
     <string name="offline">Offline</string>
     <string name="node_info">Node Info</string>
-    <string name="node_id">Node ID</string>
     <string name="device_id">Device ID</string>
     <string name="ip_address">IP Address</string>
     <string name="rssi">RSSI</string>
     <string name="led_count">LED Count</string>
     <string name="cct_enabled">CCT Enabled</string>
     <string name="udp_enabled">UDP Enabled</string>
-    <string name="empt_dash">—</string>
+    <string name="empty_dash">—</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="processor_id">Processor ID</string>
@@ -121,5 +120,19 @@
     <string name="wifi_master_connected_ack">Master Wi‑Fi connected (ACK)</string>
     <string name="wifi_connect_ack_timeout">No ACK received for WIFI_CONNECT</string>
     <string name="wifi_connect_nack">WIFI_CONNECT failed: %1$s</string>
+    <string name="failed_to_load_nodes">Failed to load Nodes.</string>
+    <string name="wifi_connect_failed">WIFI CONNECT Failed: %1$s</string>
+    <string name="no_response_received">No response received</string>
+    <string name="failed_to_send_network_config">Failed to send NETWORK_CONFIG</string>
+    <string name="search">Search…</string>
+    <string name="no_results">No results</string>
+    <string name="effect">Effect</string>
+    <string name="palette">Palette</string>
+    <string name="speed">Speed</string>
+    <string name="intensity">Intensity</string>
+    <string name="cct_0_255">پین‌های CCT باید 0 تا 255 باشند</string>
+    <string name="output_value">OUTPUT_VALUE ارسال شد</string>
+    <string name="output">Output تأیید شد</string>
+    <string name="output_confirm">خطا در OUTPUT_CONFIRM</string>
 
 </resources>

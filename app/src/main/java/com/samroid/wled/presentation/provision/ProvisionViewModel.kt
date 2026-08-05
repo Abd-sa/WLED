@@ -191,18 +191,23 @@ class ProvisionViewModel @Inject constructor(
             it.copy(storeNodeId = v.filter { c -> c.isDigit() }.take(3))
         }
     }
+fun onStoreNodeNameChange(v: String) {
+        _uiState.update {
+            it.copy(storeNodeName = v)
+        }
+    }
 
     fun testOutput() {
         val warm = _uiState.value.cctWarmGpio.toIntOrNull()
         val cool = _uiState.value.cctCoolGpio.toIntOrNull()
         if (warm == null || cool == null || warm !in 0..255 || cool !in 0..255) {
-            _uiState.update { it.copy(message = "پین‌های CCT باید 0 تا 255 باشند") }
+            _uiState.update { it.copy(message = context.getString(R.string.cct_0_255)) }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             transport.outputValue(warm, cool)
-            _uiState.update { it.copy(isBusy = false, message = "OUTPUT_VALUE ارسال شد") }
+            _uiState.update { it.copy(isBusy = false, message = context.getString(R.string.output_value)) }
         }
     }
 
@@ -214,7 +219,7 @@ class ProvisionViewModel @Inject constructor(
                 it.copy(
                     isBusy = false,
                     currentStep = if (ok) ProvisionStep.STORE else it.currentStep,
-                    message = if (ok) "Output تأیید شد" else "خطا در OUTPUT_CONFIRM"
+                    message = if (ok) context.getString(R.string.output) else context.getString(R.string.output_confirm)
                 )
             }
         }

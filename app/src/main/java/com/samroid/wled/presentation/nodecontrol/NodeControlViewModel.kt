@@ -50,10 +50,28 @@ class NodeControlViewModel @Inject constructor(
     // ---- RGB ----
 
     fun setRgbOn(on: Boolean) {
-        _uiState.update { it.copy(rgbOn = on) }
+        _uiState.update {
+            it.copy(
+                rgbOn = on,
+                effectExpanded = if (on) it.effectExpanded else false,
+                paletteExpanded = if (on) it.paletteExpanded else false
+            )
+        }
         viewModelScope.launch {
             transport.onOff(nodeId, output = 0, on = on)
         }
+    }
+
+    fun setCctOn(on: Boolean) {
+        _uiState.update { it.copy(cctOn = on) }
+        viewModelScope.launch {
+            transport.onOff(nodeId, output = 1, on = on)
+        }
+    }
+
+    fun applyColorFromPicker(r: Float, g: Float, b: Float) {
+        setColor(r, g, b)
+        commitColor()
     }
 
     fun setBrightnessRgb(value: Float) {
@@ -87,12 +105,7 @@ class NodeControlViewModel @Inject constructor(
 
     // ---- CCT ----
 
-    fun setCctOn(on: Boolean) {
-        _uiState.update { it.copy(cctOn = on) }
-        viewModelScope.launch {
-            transport.onOff(nodeId, output = 1, on = on)
-        }
-    }
+
 
     fun setBrightnessCct(value: Float) {
         _uiState.update { it.copy(brightnessCct = value) }

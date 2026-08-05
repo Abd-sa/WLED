@@ -1,4 +1,3 @@
 package com.samroid.wled.presentation.designsystem
 
-class AppColors {
-}
+class AppColors
