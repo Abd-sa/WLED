@@ -15,17 +15,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowRight
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,26 +33,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samroid.wled.R
 import com.samroid.wled.domain.model.NodeListItem
-import com.samroid.wled.presentation.navigation.Routes
-import com.samroid.wled.presentation.theme.AppColors
 import com.samroid.wled.presentation.theme.AppColors.Brand.Green
 import com.samroid.wled.presentation.theme.AppColors.Brand.Red
-
 
 @Composable
 fun NodeListScreen(
     onOpenNode: (Int) -> Unit,
+    onOpenControl: (Int) -> Unit = {},
     onAddNode: () -> Unit = {},
-    onEditNode: (Int) -> Unit = {},
     viewModel: NodeListViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -78,9 +68,16 @@ fun NodeListScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(stringResource(R.string.nodes), color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.headlineLarge)
+            Text(
+                stringResource(R.string.nodes),
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.headlineLarge
+            )
             Row {
-                IconButton(onClick = viewModel::refresh) {
+                IconButton(
+                    onClick = viewModel::refresh,
+                    enabled = !state.isLoading
+                ) {
                     if (state.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
@@ -88,11 +85,19 @@ fun NodeListScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Icon(Icons.Outlined.Refresh, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Outlined.Refresh,
+                            contentDescription = stringResource(R.string.refresh),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 IconButton(onClick = onAddNode) {
-                    Icon(Icons.Outlined.Add, null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Outlined.Add,
+                        contentDescription = stringResource(R.string.provision),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -117,6 +122,14 @@ fun NodeListScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        if (!state.isLoading && state.nodes.isEmpty() && state.bluetoothConnected) {
+            Text(
+                stringResource(R.string.no_nodes_found),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxSize()
@@ -124,8 +137,8 @@ fun NodeListScreen(
             items(state.nodes, key = { it.nodeId }) { node ->
                 NodeCard(
                     node = node,
-                    onClick = { onOpenNode(node.nodeId) },
-                    onEdit = {onEditNode(node.nodeId)}
+                    onOpenInfo = { onOpenNode(node.nodeId) },
+                    onOpenControl = { onOpenControl(node.nodeId) }
                 )
             }
         }
@@ -135,19 +148,18 @@ fun NodeListScreen(
 @Composable
 private fun NodeCard(
     node: NodeListItem,
-    onClick: () -> Unit,
-    onEdit:()-> Unit
+    onOpenInfo: () -> Unit,
+    onOpenControl: () -> Unit
 ) {
-    // نام/IP نمایشی موقت تا NODE_INFO کامل شود
-    val title = stringResource(R.string.node, node.nodeId)
-    val subtitle = stringResource(R.string.id, node.nodeId)
+    val title = node.nodeName.ifBlank { stringResource(R.string.node, node.nodeId) }
+    val subtitle = stringResource(R.string.id_nodeid, node.nodeId)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onOpenInfo)
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -159,35 +171,40 @@ private fun NodeCard(
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Outlined.Memory, null, tint = MaterialTheme.colorScheme.primary)
-
         }
 
         Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(title, color = MaterialTheme.colorScheme.onBackground, style =MaterialTheme.typography.titleMedium)
+                Text(
+                    title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Spacer(Modifier.width(8.dp))
                 StatusBadge(node.online)
-                Spacer(Modifier.width(8.dp))
-                Icon(Icons.Outlined.Edit, null, tint = MaterialTheme.colorScheme.primary,modifier = Modifier.clickable {
-                    onEdit()
-                })
             }
             Spacer(Modifier.height(4.dp))
-
-//            Button (
-//                onClick = onEdit  ,
-//                modifier = Modifier.width(50.dp),
-//                colors = ButtonDefaults.buttonColors(containerColor = Purple)
-//            ) {
-//                Text("Open Control")
-//            }
-            Spacer(Modifier.height(4.dp))
-            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text(
+                subtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
-        Icon(Icons.AutoMirrored.Outlined.ArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        IconButton(onClick = onOpenControl) {
+            Icon(
+                Icons.Outlined.Tune,
+                contentDescription = stringResource(R.string.control),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        Icon(
+            Icons.AutoMirrored.Outlined.ArrowRight,
+            null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -196,7 +213,7 @@ private fun StatusBadge(online: Boolean) {
     Text(
         text = if (online) stringResource(R.string.online) else stringResource(R.string.offline),
         color = if (online) Green else Red,
-        style =MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelSmall,
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(

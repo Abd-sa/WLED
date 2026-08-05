@@ -125,13 +125,9 @@ fun AppRoot(appUiState: AppUiState) {
             }
             composable(Routes.NODES) {
                 NodeListScreen(
-                    onOpenNode = { id ->
-                        navController.navigate(Routes.nodeInfo(id))
-                    },
-                    onAddNode = {
-                        navController.navigate(Routes.PROVISION)
-                    },
-                    onEditNode = {id->navController.navigate(Routes.nodeControl(id))}
+                    onOpenNode = { id -> navController.navigate(Routes.nodeInfo(id)) },
+                    onOpenControl = { id -> navController.navigate(Routes.nodeControl(id)) },
+                    onAddNode = { navController.navigate(Routes.PROVISION) }
                 )
             }
 
@@ -139,7 +135,12 @@ fun AppRoot(appUiState: AppUiState) {
                 route = Routes.NODE_INFO,
                 arguments = listOf(navArgument("nodeId") { type = NavType.IntType })
             ) {
-                NodeInfoScreen(onBack = { navController.popBackStack() })
+                NodeInfoScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenControl = { id ->
+                        navController.navigate(Routes.nodeControl(id))
+                    }
+                )
             }
             composable(
                 route = Routes.NODE_CONTROL,

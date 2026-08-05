@@ -1,6 +1,5 @@
 package com.samroid.wled.presentation.connection.wifi
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,20 +35,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samroid.wled.R
 import com.samroid.wled.presentation.theme.AppColors.Brand.Green
 import com.samroid.wled.presentation.theme.AppColors.Brand.Red
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,22 +125,27 @@ fun WifiConfigContent(
 
         Spacer(Modifier.height(6.dp))
 
-        // وضعیت بلوتوث
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(if (state.bluetoothConnected) Green else Red)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = if (state.bluetoothConnected) stringResource(R.string.bluetooth_is_connected_you_are_ready_to_set_config)
-                else stringResource(R.string.bluetooth_is_not_connected),
-                color = if (state.bluetoothConnected) Green else MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
+        StatusRow(
+            ok = state.bluetoothConnected,
+            text = if (state.bluetoothConnected) {
+                stringResource(R.string.bluetooth_is_connected_you_are_ready_to_set_config)
+            } else {
+                stringResource(R.string.bluetooth_is_not_connected)
+            }
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        StatusRow(
+            ok = state.wifiConnected,
+            text = if (state.wifiConnected) {
+                stringResource(R.string.wifi_master_connected_ack)
+            } else if (state.configSaved) {
+                stringResource(R.string.wifi_config_saved_not_connected)
+            } else {
+                stringResource(R.string.wifi_not_configured)
+            }
+        )
 
         Spacer(Modifier.height(16.dp))
 
@@ -158,9 +158,7 @@ fun WifiConfigContent(
             shape = RoundedCornerShape(12.dp),
             colors = fieldColors
         )
-
         Spacer(Modifier.height(10.dp))
-
         OutlinedTextField(
             value = state.password,
             onValueChange = onPasswordChange,
@@ -173,9 +171,12 @@ fun WifiConfigContent(
         )
 
         Spacer(Modifier.height(14.dp))
-        Text(stringResource(R.string.base_ip_192_168_1), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Text(
+            stringResource(R.string.base_ip_192_168_1),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall
+        )
         Spacer(Modifier.height(8.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -192,7 +193,7 @@ fun WifiConfigContent(
         if (!state.lastMessage.isNullOrBlank()) {
             Spacer(Modifier.height(12.dp))
             Text(
-                text = state.lastMessage.orEmpty(),
+                state.lastMessage.orEmpty(),
                 color = Green,
                 style = MaterialTheme.typography.titleSmall
             )
@@ -203,9 +204,7 @@ fun WifiConfigContent(
         Button(
             onClick = onSendConfig,
             enabled = state.bluetoothConnected && !state.isSendingConfig,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
@@ -217,7 +216,7 @@ fun WifiConfigContent(
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            Text("ارسال NETWORK_CONFIG", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.send_network_config), fontWeight = FontWeight.SemiBold)
         }
 
         Spacer(Modifier.height(10.dp))
@@ -225,9 +224,7 @@ fun WifiConfigContent(
         OutlinedButton(
             onClick = onConnectWifi,
             enabled = state.bluetoothConnected && !state.isConnectingWifi,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(14.dp)
         ) {
             if (state.isConnectingWifi) {
@@ -238,8 +235,26 @@ fun WifiConfigContent(
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            Text("WIFI_CONNECT", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.wifi_connect_action), fontWeight = FontWeight.SemiBold)
         }
+    }
+}
+
+@Composable
+private fun StatusRow(ok: Boolean, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(if (ok) Green else Red)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = text,
+            color = if (ok) Green else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 

@@ -472,6 +472,7 @@ class BleManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     suspend fun sendPacket(packet: ByteArray): Boolean = withContext(Dispatchers.Main) {
+        _lastDeviceResponse.value = null
         val g = gatt
         val ch = writeChar
         if (g == null || ch == null) {

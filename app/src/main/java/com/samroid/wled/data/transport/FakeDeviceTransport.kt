@@ -50,7 +50,6 @@ class FakeDeviceTransport : DeviceTransport {
     private val _controllerInfo = MutableStateFlow<ControllerInfo?>(null)
     override val controllerInfo: StateFlow<ControllerInfo?> = _controllerInfo.asStateFlow()
 
-    // ---------- state شبیه‌ساز ----------
     private var seq = 0
     private var provisionActive = false
     private var wifiConfigured = false
@@ -326,7 +325,13 @@ class FakeDeviceTransport : DeviceTransport {
     override suspend fun nodeListCmd(): Boolean {
         if (!ensureConnected()) return false
         latency()
-        val list = nodes.map { (id, n) -> NodeListItem("",id, n.online) }
+        val list = nodes.map { (id, n) ->
+            NodeListItem(
+                nodeName = "Node$id",
+                nodeId = id,
+                online = n.online
+            )
+        }
         _nodeList.value = list
         val resp = DeviceResponse.NodeList(nextSeq(), list)
         _lastDeviceResponse.value = resp
@@ -342,6 +347,7 @@ class FakeDeviceTransport : DeviceTransport {
         val n = requireNode(nodeId) ?: return true
         val info = NodeInfoData(
             nodeId = nodeId,
+            nodeName = "Node$nodeId",
             deviceId = n.deviceId,
             ip = "192.168.1.${n.ipSuffix}",
             rssi = n.rssi,
@@ -350,8 +356,7 @@ class FakeDeviceTransport : DeviceTransport {
             udpEnabled = n.udpEnabled,
             processorId = n.processorId,
             startPixel = n.startPixel,
-            endPixel = n.endPixel,
-            nodeName = ""
+            endPixel = n.endPixel
         )
         _nodeInfo.value = info
         val resp = DeviceResponse.NodeInfo(nextSeq(), info)

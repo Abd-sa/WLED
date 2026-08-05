@@ -1,9 +1,7 @@
 package com.samroid.wled.presentation.dashboard
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.samroid.wled.R
 import com.samroid.wled.data.repository.LocalSettingsRepository
 import com.samroid.wled.data.repository.WifiStatusRepository
 import com.samroid.wled.data.transport.DeviceTransport
@@ -11,7 +9,6 @@ import com.samroid.wled.domain.model.DeviceResponse
 import com.samroid.wled.domain.model.TransportConnectionState
 import com.samroid.wled.domain.usecase.AutoConnectBluetoothUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +25,6 @@ class DashboardViewModel @Inject constructor(
     private val transport: DeviceTransport,
     private val localSettings: LocalSettingsRepository,
     private val wifiStatus: WifiStatusRepository,
-    @ApplicationContext private val context: Context,
     private val autoConnectBluetooth: AutoConnectBluetoothUseCase
 ) : ViewModel() {
 
@@ -36,13 +32,10 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private object AutoConnectGate {
-        @Volatile
-        var attempted = false
+        @Volatile var attempted = false
     }
 
-    @Volatile
-    private var postConnectHandled = false
-
+    @Volatile private var postConnectHandled = false
     private var postConnectJob: Job? = null
 
     init {
@@ -72,19 +65,15 @@ class DashboardViewModel @Inject constructor(
                 onBluetoothConnected()
                 return@launch
             }
-
             val saved = localSettings.getLastBtDevice() ?: return@launch
             _uiState.update { it.copy(isAutoConnecting = true) }
-
             val ok = autoConnectBluetooth()
-
             _uiState.update {
                 it.copy(
                     isAutoConnecting = false,
                     bluetoothName = if (ok) saved.name else it.bluetoothName
                 )
             }
-
         }
     }
 
@@ -96,18 +85,17 @@ class DashboardViewModel @Inject constructor(
                         bluetoothState = state,
                         bluetoothName = when (state) {
                             TransportConnectionState.CONNECTED ->
-                                it.bluetoothName.takeIf { n -> n != context.getString(R.string.empty_dash) } ?: "Master"
+                                it.bluetoothName.takeIf { n -> n != "—" } ?: "Master"
                             TransportConnectionState.CONNECTING -> it.bluetoothName
-                            else -> context.getString(R.string.empty_dash)
+                            else -> "—"
                         }
                     )
                 }
-
                 when (state) {
                     TransportConnectionState.CONNECTED -> onBluetoothConnected()
                     TransportConnectionState.DISCONNECTED,
                     TransportConnectionState.ERROR -> onBluetoothLost()
-                    TransportConnectionState.CONNECTING -> Unit
+                    else -> Unit
                 }
             }
         }
@@ -116,10 +104,8 @@ class DashboardViewModel @Inject constructor(
     private fun onBluetoothConnected() {
         if (postConnectHandled) return
         postConnectHandled = true
-
         postConnectJob?.cancel()
         postConnectJob = viewModelScope.launch {
-
             delay(400)
             reapplyWifiFromStorage()
             refreshNodesInternal()
@@ -133,7 +119,6 @@ class DashboardViewModel @Inject constructor(
         wifiStatus.setConnected(false)
     }
 
-
     private suspend fun reapplyWifiFromStorage() {
         val cfg = localSettings.getNetworkConfig() ?: return
         if (cfg.ssid.isBlank()) return
@@ -146,45 +131,31 @@ class DashboardViewModel @Inject constructor(
             cfg.baseIp2.toByte(),
             cfg.baseIp3.toByte()
         )
-
-        val configSent = transport.networkConfig(cfg.ssid, cfg.password, baseIp)
-        if (!configSent) {
-            _uiState.update { it.copy(message = context.getString(R.string.failed_to_send_network_config)) }
+        val configOk = transport.networkConfig(cfg.ssid, cfg.password, baseIp)
+        if (!configOk) {
+            _uiState.update { it.copy(message = "NETWORK_CONFIG failed") }
             return
         }
-
         delay(500)
-
         val connectSent = transport.wifiConnect()
         if (!connectSent) {
-            _uiState.update { it.copy(message =context.getString(R.string.wifi_connect_failed) ) }
+            _uiState.update { it.copy(message = "WIFI_CONNECT send failed") }
             return
         }
-
         val response = withTimeoutOrNull(4_000) {
             transport.lastDeviceResponse.first { r ->
                 r is DeviceResponse.Ack || r is DeviceResponse.Nack
             }
         }
-
         when (response) {
-            is DeviceResponse.Ack -> {
-                wifiStatus.setConnected(true)
-            }
+            is DeviceResponse.Ack -> wifiStatus.setConnected(true)
             is DeviceResponse.Nack -> {
                 wifiStatus.setConnected(false)
-                _uiState.update {
-                    it.copy(message = context.getString(
-                        R.string.wifi_connect_failed,
-                        response.errorMessage()
-                    ))
-                }
+                _uiState.update { it.copy(message = "WIFI_CONNECT NACK: ${response.errorMessage()}") }
             }
             null -> {
                 wifiStatus.setConnected(false)
-                _uiState.update {
-                    it.copy(message = context.getString(R.string.no_response_received))
-                }
+                _uiState.update { it.copy(message = "WIFI_CONNECT ACK timeout") }
             }
             else -> Unit
         }
@@ -221,34 +192,23 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun refreshNodes() {
-        viewModelScope.launch {
-            refreshNodesInternal()
-        }
+        viewModelScope.launch { refreshNodesInternal() }
     }
 
     private suspend fun refreshNodesInternal() {
         if (transport.transportConnectionState.value != TransportConnectionState.CONNECTED) {
             _uiState.update {
-                it.copy(
-                    isRefreshingNodes = false,
-                    message = context.getString(R.string.please_connect_bluetooth)
-                )
+                it.copy(isRefreshingNodes = false, message = "Bluetooth must be connected")
             }
             return
         }
-
         _uiState.update { it.copy(isRefreshingNodes = true, message = null) }
         val ok = transport.nodeListCmd()
         if (!ok) {
             _uiState.update {
-                it.copy(
-                    isRefreshingNodes = false,
-                    message = context.getString(R.string.failed_to_load_nodes)
-                )
+                it.copy(isRefreshingNodes = false, message = "NODE_LIST failed")
             }
         }
-        // موفقیت: isRefreshingNodes با observeNodes بعد از nodeList خاموش می‌شود
-        // اگر پاسخ خیلی طول کشید:
         delay(5_000)
         if (_uiState.value.isRefreshingNodes) {
             _uiState.update { it.copy(isRefreshingNodes = false) }
