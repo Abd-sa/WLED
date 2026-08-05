@@ -41,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.samroid.wled.R
+import com.samroid.wled.domain.wled.WledEffectCatalog
+import com.samroid.wled.domain.wled.WledPaletteCatalog
 import com.samroid.wled.presentation.theme.AppColors.Brand.Green
 
 @Composable
@@ -51,8 +53,8 @@ fun NodeControlScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colorController = rememberColorPickerController()
 
-    val effectItems = remember { (0..159).map { it to EffectCatalog.effectLabel(it) } }
-    val paletteItems = remember { (0..71).map { it to EffectCatalog.paletteLabel(it) } }
+    val effectItems = remember { WledEffectCatalog.asDropdownItems() }
+    val paletteItems = remember { WledPaletteCatalog.asDropdownItems() }
 
     Column(
         modifier = Modifier
@@ -127,7 +129,8 @@ fun NodeControlScreen(
         Spacer(Modifier.height(20.dp))
 
         if (state.selectedTab == ControlTab.CONTROL) {
-            // ---------- RGB ----------
+
+            // ===================== RGB =====================
             SectionCard {
                 Row(
                     Modifier.fillMaxWidth(),
@@ -146,8 +149,9 @@ fun NodeControlScreen(
                 }
 
                 if (state.rgbOn) {
-                    /**
                     Spacer(Modifier.height(14.dp))
+
+                    // Brightness
                     LabelValue(
                         stringResource(R.string.brightness),
                         state.brightnessRgb.toInt().toString()
@@ -166,6 +170,7 @@ fun NodeControlScreen(
                     )
                     Spacer(Modifier.height(8.dp))
 
+                    // Color Picker
                     HsvColorPicker(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,14 +185,16 @@ fun NodeControlScreen(
                         onColorChanged = { envelope ->
                             val c = envelope.color
                             viewModel.setColor(
-                                c.red * 255f,
-                                c.green * 255f,
-                                c.blue * 255f
+                                (c.red * 255f).coerceIn(0f, 255f),
+                                (c.green * 255f).coerceIn(0f, 255f),
+                                (c.blue * 255f).coerceIn(0f, 255f)
                             )
                         }
                     )
 
                     Spacer(Modifier.height(8.dp))
+                    val bri = (state.brightnessRgb / 255f).coerceIn(0f, 1f)
+                    // Preview strip — tap to commit
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -195,20 +202,21 @@ fun NodeControlScreen(
                             .clip(RoundedCornerShape(10.dp))
                             .background(
                                 Color(
-                                    red = state.colorR / 255f,
-                                    green = state.colorG / 255f,
-                                    blue = state.colorB / 255f
+                                    red = (state.colorR / 255f)*bri,
+                                    green = (state.colorG / 255f)*bri,
+                                    blue = (state.colorB / 255f)*bri
                                 )
                             )
                             .border(
                                 1.dp,
-                                MaterialTheme.colorScheme.outline.copy(0.3f),
+                                MaterialTheme.colorScheme.onPrimary.copy(0.08f),
                                 RoundedCornerShape(10.dp)
                             )
                             .clickable { viewModel.commitColor() }
                     )
 
                     Spacer(Modifier.height(10.dp))
+
                     LabelValue(stringResource(R.string.r), state.colorR.toInt().toString())
                     ControlSlider(
                         value = state.colorR,
@@ -237,51 +245,8 @@ fun NodeControlScreen(
                         onValueChangeFinished = viewModel::commitColor
                     )
 
+                    // ---- RGB Effect / Palette / Preview / SX / IX ----
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        stringResource(R.string.rgb_effect),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    DropdownSelector(
-                        label = EffectCatalog.effectLabel(state.rgbEffectId),
-                        expanded = state.rgbEffectExpanded,
-                        onExpandedChange = viewModel::toggleRgbEffectMenu,
-                        items = effectItems,
-                        onSelect = viewModel::setRgbEffectId
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    DropdownSelector(
-                        label = EffectCatalog.paletteLabel(state.rgbPaletteId),
-                        expanded = state.rgbPaletteExpanded,
-                        onExpandedChange = viewModel::toggleRgbPaletteMenu,
-                        items = paletteItems,
-                        onSelect = viewModel::setRgbPaletteId
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    LabelValue(
-                        stringResource(R.string.speed),
-                        state.rgbEffectSpeed.toInt().toString()
-                    )
-                    ControlSlider(
-                        value = state.rgbEffectSpeed,
-                        onValueChange = viewModel::setRgbEffectSpeed,
-                        onValueChangeFinished = viewModel::commitRgbEffectSpeed
-                    )
-                    LabelValue(
-                        stringResource(R.string.intensity),
-                        state.rgbEffectIntensity.toInt().toString()
-                    )
-                    ControlSlider(
-                        value = state.rgbEffectIntensity,
-                        onValueChange = viewModel::setRgbEffectIntensity,
-                        onValueChangeFinished = viewModel::commitRgbEffectIntensity
-                    )
-                    **/
-                    Spacer(Modifier.height(14.dp))
-
-                    // ---- RGB Effect / Palette / SX / IX ----
                     Text(
                         stringResource(R.string.rgb_effect),
                         color = MaterialTheme.colorScheme.onBackground,
@@ -296,7 +261,7 @@ fun NodeControlScreen(
                     )
                     Spacer(Modifier.height(6.dp))
                     DropdownSelector(
-                        label = EffectCatalog.effectLabel(state.rgbEffectId),
+                        label = WledEffectCatalog.nameOf(state.rgbEffectId),
                         expanded = state.rgbEffectExpanded,
                         onExpandedChange = viewModel::toggleRgbEffectMenu,
                         items = effectItems,
@@ -311,12 +276,32 @@ fun NodeControlScreen(
                     )
                     Spacer(Modifier.height(6.dp))
                     DropdownSelector(
-                        label = EffectCatalog.paletteLabel(state.rgbPaletteId),
+                        label = WledPaletteCatalog.nameOf(state.rgbPaletteId),
                         expanded = state.rgbPaletteExpanded,
                         onExpandedChange = viewModel::toggleRgbPaletteMenu,
                         items = paletteItems,
                         onSelect = viewModel::setRgbPaletteId
                     )
+
+                    Spacer(Modifier.height(8.dp))
+                    // یک پیش‌نمایش مشترک (Effect + Palette + رنگ فعلی)
+                    EffectPreviewBar(
+                        effectId = state.rgbEffectId,
+                        paletteId = state.rgbPaletteId,
+                        speed = state.rgbEffectSpeed,
+                        intensity = state.rgbEffectIntensity,
+                        primary = Color(
+                            (state.colorR / 255f)*bri,
+                            (state.colorG / 255f)*bri,
+                            (state.colorB / 255f)*bri
+                        ),
+                        secondary = Color.Black,
+                        height = 24.dp,
+                        ledCount = 56,
+                        animate = true
+                    )
+                    Spacer(Modifier.height(6.dp))
+
 
                     Spacer(Modifier.height(14.dp))
                     LabelValue(
@@ -328,7 +313,6 @@ fun NodeControlScreen(
                         onValueChange = viewModel::setRgbEffectSpeed,
                         onValueChangeFinished = viewModel::commitRgbEffectSpeed
                     )
-
                     LabelValue(
                         stringResource(R.string.intensity),
                         state.rgbEffectIntensity.toInt().toString()
@@ -338,11 +322,10 @@ fun NodeControlScreen(
                         onValueChange = viewModel::setRgbEffectIntensity,
                         onValueChangeFinished = viewModel::commitRgbEffectIntensity
                     )
-
                 }
             }
 
-            // ---------- CCT (only if enabled) ----------
+            // ===================== CCT =====================
             if (state.cctEnabled) {
                 Spacer(Modifier.height(14.dp))
                 SectionCard {
@@ -364,6 +347,7 @@ fun NodeControlScreen(
 
                     if (state.cctOn) {
                         Spacer(Modifier.height(14.dp))
+
                         LabelValue(
                             stringResource(R.string.brightness),
                             state.brightnessCct.toInt().toString()
@@ -402,49 +386,6 @@ fun NodeControlScreen(
                         )
 
                         Spacer(Modifier.height(16.dp))
-                        /*
-                        Text(
-                            stringResource(R.string.cct_effect),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        DropdownSelector(
-                            label = EffectCatalog.effectLabel(state.cctEffectId),
-                            expanded = state.cctEffectExpanded,
-                            onExpandedChange = viewModel::toggleCctEffectMenu,
-                            items = effectItems,
-                            onSelect = viewModel::setCctEffectId
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        DropdownSelector(
-                            label = EffectCatalog.paletteLabel(state.cctPaletteId),
-                            expanded = state.cctPaletteExpanded,
-                            onExpandedChange = viewModel::toggleCctPaletteMenu,
-                            items = paletteItems,
-                            onSelect = viewModel::setCctPaletteId
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        LabelValue(
-                            stringResource(R.string.speed),
-                            state.cctEffectSpeed.toInt().toString()
-                        )
-                        ControlSlider(
-                            value = state.cctEffectSpeed,
-                            onValueChange = viewModel::setCctEffectSpeed,
-                            onValueChangeFinished = viewModel::commitCctEffectSpeed
-                        )
-                        LabelValue(
-                            stringResource(R.string.intensity),
-                            state.cctEffectIntensity.toInt().toString()
-                        )
-                        ControlSlider(
-                            value = state.cctEffectIntensity,
-                            onValueChange = viewModel::setCctEffectIntensity,
-                            onValueChangeFinished = viewModel::commitCctEffectIntensity
-                        )
-
-                         */
                         Text(
                             stringResource(R.string.cct_effect),
                             color = MaterialTheme.colorScheme.onBackground,
@@ -459,7 +400,7 @@ fun NodeControlScreen(
                         )
                         Spacer(Modifier.height(6.dp))
                         DropdownSelector(
-                            label = EffectCatalog.effectLabel(state.cctEffectId),
+                            label = WledEffectCatalog.nameOf(state.cctEffectId),
                             expanded = state.cctEffectExpanded,
                             onExpandedChange = viewModel::toggleCctEffectMenu,
                             items = effectItems,
@@ -474,12 +415,27 @@ fun NodeControlScreen(
                         )
                         Spacer(Modifier.height(6.dp))
                         DropdownSelector(
-                            label = EffectCatalog.paletteLabel(state.cctPaletteId),
+                            label = WledPaletteCatalog.nameOf(state.cctPaletteId),
                             expanded = state.cctPaletteExpanded,
                             onExpandedChange = viewModel::toggleCctPaletteMenu,
                             items = paletteItems,
                             onSelect = viewModel::setCctPaletteId
                         )
+
+                        Spacer(Modifier.height(8.dp))
+                        EffectPreviewBar(
+                            effectId = state.cctEffectId,
+                            paletteId = state.cctPaletteId,
+                            speed = state.cctEffectSpeed,
+                            intensity = state.cctEffectIntensity,
+                            primary = cctPreviewPrimary(state.brightnessCct, state.cctValue),
+                            secondary = cctPreviewSecondary(state.brightnessCct),
+                            height = 24.dp,
+                            ledCount = 56,
+                            animate = true
+                        )
+                        Spacer(Modifier.height(6.dp))
+
 
                         Spacer(Modifier.height(14.dp))
                         LabelValue(
@@ -491,7 +447,6 @@ fun NodeControlScreen(
                             onValueChange = viewModel::setCctEffectSpeed,
                             onValueChangeFinished = viewModel::commitCctEffectSpeed
                         )
-
                         LabelValue(
                             stringResource(R.string.intensity),
                             state.cctEffectIntensity.toInt().toString()
@@ -517,7 +472,51 @@ fun NodeControlScreen(
         Spacer(Modifier.height(24.dp))
     }
 }
+/**
+ * Map WLED-style CCT 0..255 + brightness 0..255 → preview Color.
+ * 0 = warm, 255 = cool (same idea as the orange→white→blue gradient under the slider).
+ */
+fun cctPreviewPrimary(brightness: Float, cct: Float): Color {
+    val bri = (brightness / 255f).coerceIn(0f, 1f)
+    val t = (cct / 255f).coerceIn(0f, 1f)
 
+    // Warm (amber) → Neutral white → Cool (sky blue)
+    val warm =Color(0xFF90CAF9)
+    val neutral = Color(0xFFFFF8E7)
+    val cool = Color(0xFFFFB74D)
+
+    val base = when {
+        t < 0.5f -> {
+            val u = t / 0.5f
+            Color(
+                red = warm.red + (neutral.red - warm.red) * u,
+                green = warm.green + (neutral.green - warm.green) * u,
+                blue = warm.blue + (neutral.blue - warm.blue) * u
+            )
+        }
+        else -> {
+            val u = (t - 0.5f) / 0.5f
+            Color(
+                red = neutral.red + (cool.red - neutral.red) * u,
+                green = neutral.green + (cool.green - neutral.green) * u,
+                blue = neutral.blue + (cool.blue - neutral.blue) * u
+            )
+        }
+    }
+
+    return Color(
+        red = base.red * bri,
+        green = base.green * bri,
+        blue = base.blue * bri,
+        alpha = 1f
+    )
+}
+
+fun cctPreviewSecondary(brightness: Float): Color {
+    val bri = (brightness / 255f).coerceIn(0f, 1f)
+    // dim background so effects still read
+    return Color(0.08f * bri, 0.05f * bri, 0.03f * bri)
+}
 @Composable
 fun SectionCard(content: @Composable () -> Unit) {
     Column(

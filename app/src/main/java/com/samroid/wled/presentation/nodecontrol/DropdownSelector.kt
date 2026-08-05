@@ -2,7 +2,9 @@ package com.samroid.wled.presentation.nodecontrol
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -136,6 +138,22 @@ fun DropdownSelector(
                                 color = MaterialTheme.colorScheme.onBackground,
                                 style = MaterialTheme.typography.labelLarge
                             )
+//                            Spacer(modifier = Modifier.height(15.dp))
+//                            EffectPreviewBar(
+//                                effectId = state.rgbEffectId,
+//                                paletteId = state.rgbPaletteId,
+//                                speed = state.rgbEffectSpeed,
+//                                intensity = state.rgbEffectIntensity,
+//                                primary = Color(
+//                                    state.colorR / 255f,
+//                                    state.colorG / 255f,
+//                                    state.colorB / 255f
+//                                ),
+//                                secondary = Color.Black,
+//                                height = 24.dp,
+//                                ledCount = 56,
+//                                animate = true
+//                            )
                         },
                         onClick = {
                             onSelect(id)

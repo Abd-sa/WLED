@@ -1,5 +1,8 @@
 package com.samroid.wled.presentation.nodecontrol
 
+import com.samroid.wled.domain.wled.WledEffectCatalog
+import com.samroid.wled.domain.wled.WledPaletteCatalog
+
 data class NodeControlUiState(
     val nodeId: Int = 0,
     val online: Boolean = true,
@@ -40,6 +43,6 @@ data class NodeControlUiState(
 enum class ControlTab { CONTROL, PRESETS }
 
 object EffectCatalog {
-    fun effectLabel(id: Int) = "Effect $id"
-    fun paletteLabel(id: Int) = "Palette $id"
+    fun effectLabel(id: Int) = WledEffectCatalog.nameOf(id)
+    fun paletteLabel(id: Int) = WledPaletteCatalog.nameOf(id)
 }
