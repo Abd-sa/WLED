@@ -134,4 +134,19 @@
     <string name="output_value">OUTPUT_VALUE ارسال شد</string>
     <string name="output">Output تأیید شد</string>
     <string name="output_confirm">خطا در OUTPUT_CONFIRM</string>
+    <string name="ambient_notification_channel">Ambient Light</string>
+    <string name="ambient_notification_title">Ambient light running</string>
+    <string name="ambient_notification_text">Streaming screen colors to LEDs</string>
+    <string name="ambient_protocol">Protocol</string>
+    <string name="ambient_protocol_ddp">DDP (port 4048)</string>
+    <string name="ambient_protocol_udp_raw">UDP Raw (port 19446)</string>
+    <string name="ambient_color_order">Color order</string>
+    <string name="ambient_fps">FPS</string>
+    <string name="ambient_quality">Quality</string>
+    <string name="ambient_smoothing">Smoothing</string>
+    <string name="ambient_average_color">Average color mode</string>
+    <string name="ambient_start">Start ambient</string>
+    <string name="ambient_stop">Stop ambient</string>
+    <string name="ambient_target_host">Target host / IP</string>
+    <string name="ambient_led_layout">LED layout (T / R / B / L)</string>
 </resources>
