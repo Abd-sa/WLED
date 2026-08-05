@@ -54,20 +54,44 @@ class EdgeSampler(
             }
         }
 
-        // Default path: Top L→R, Right T→B, Bottom R→L, Left B→T (clockwise from top-left)
-        if (layout.clockwise && layout.startTopLeft) {
+        // Inside sample(), after avgOnLine is defined:
+
+
+        if (layout.startBottomCenter) {
+            // Bottom: center → right, then Right T←B wait: bottom center to right corner
+            val bw = (w - 1).toFloat()
+            val bh = (h - 1).toFloat()
+            val midX = bw / 2f
+
+            if (layout.enableBottom) {
+                val half = layout.bottom / 2
+                val rest = layout.bottom - half
+                // center → right along bottom
+                avgOnLine(rest, midX, bh, bw, bh)
+                // (right side of bottom counted in rest)
+            }
+            if (layout.enableRight) avgOnLine(layout.right, bw, bh, bw, 0f) // bottom→top
+            if (layout.enableTop) avgOnLine(layout.top, bw, 0f, 0f, 0f)     // right→left
+            if (layout.enableLeft) avgOnLine(layout.left, 0f, 0f, 0f, bh)  // top→bottom
+            if (layout.enableBottom) {
+                val half = layout.bottom / 2
+                // left bottom corner → center
+                avgOnLine(half, 0f, bh, midX, bh)
+            }
+        } else if (layout.clockwise) {
             if (layout.enableTop) avgOnLine(layout.top, 0f, 0f, (w - 1).toFloat(), 0f)
             if (layout.enableRight) avgOnLine(layout.right, (w - 1).toFloat(), 0f, (w - 1).toFloat(), (h - 1).toFloat())
             if (layout.enableBottom) avgOnLine(layout.bottom, (w - 1).toFloat(), (h - 1).toFloat(), 0f, (h - 1).toFloat())
             if (layout.enableLeft) avgOnLine(layout.left, 0f, (h - 1).toFloat(), 0f, 0f)
         } else {
-            // Simplified counter-clockwise from top-left
+            // counter-clockwise from top-left (fallback)
             if (layout.enableLeft) avgOnLine(layout.left, 0f, 0f, 0f, (h - 1).toFloat())
             if (layout.enableBottom) avgOnLine(layout.bottom, 0f, (h - 1).toFloat(), (w - 1).toFloat(), (h - 1).toFloat())
             if (layout.enableRight) avgOnLine(layout.right, (w - 1).toFloat(), (h - 1).toFloat(), (w - 1).toFloat(), 0f)
             if (layout.enableTop) avgOnLine(layout.top, (w - 1).toFloat(), 0f, 0f, 0f)
         }
-        return if (idx == out.size) out else out.copyOf(idx)
+
+        return if (idx == out.size) out else out.copyOf(idx.coerceAtMost(out.size))
     }
 
     fun averageColor(colors: IntArray): IntArray {

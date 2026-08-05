@@ -161,7 +161,7 @@ fun AppRoot(appUiState: AppUiState) {
                 )
             }
             composable(Routes.UDP) {
-                UdpScreen()
+                UdpScreen(onOpenAmbient = { navController.navigate(Routes.AMBILIGHT) })
             }
             composable(Routes.AMBILIGHT) {
                 var projectionCode by remember { mutableStateOf<Int?>(null) }

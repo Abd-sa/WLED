@@ -1,6 +1,5 @@
 package com.samroid.wled.presentation.udp
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,20 +27,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samroid.wled.R
 import com.samroid.wled.presentation.theme.AppColors.Brand.Green
 
-
 @Composable
 fun UdpScreen(
+    onOpenAmbient: () -> Unit = {},
     viewModel: UdpViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -55,12 +51,11 @@ fun UdpScreen(
         Text(
             stringResource(R.string.udp_management),
             color = MaterialTheme.colorScheme.onBackground,
-            style =MaterialTheme.typography.headlineLarge
+            style = MaterialTheme.typography.headlineMedium
         )
-
         Spacer(Modifier.height(16.dp))
 
-        // Stream master toggle
+        // Master stream toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -69,10 +64,16 @@ fun UdpScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.udp_stream), color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                 Text(
-                    if (state.streamEnabled) stringResource(R.string.enabled) else stringResource(R.string.disabled),
-                    color = if (state.streamEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    stringResource(R.string.udp_stream),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    if (state.streamEnabled) stringResource(R.string.enabled)
+                    else stringResource(R.string.disabled),
+                    color = if (state.streamEnabled) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -87,44 +88,32 @@ fun UdpScreen(
             )
         }
 
-        Spacer(Modifier.height(12.dp))
-
-        // Local endpoint info (برای Ambilight روز بعد)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(stringResource(R.string.local_ip), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                Text(state.localIp, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium)
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(stringResource(R.string.port), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                Text(state.port, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium)
-            }
+        Spacer(Modifier.height(10.dp))
+        TextButton(onClick = onOpenAmbient, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.open_ambient_settings))
         }
 
-        Spacer(Modifier.height(16.dp))
-
+        Spacer(Modifier.height(8.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(stringResource(R.string.nodes_mapping), color = MaterialTheme.colorScheme.onSurfaceVariant, style =  MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.nodes_mapping),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleSmall
+            )
             TextButton(onClick = viewModel::refreshNodes) {
-                Text(stringResource(R.string.refresh), color = MaterialTheme.colorScheme.primary,style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.refresh), color = MaterialTheme.colorScheme.primary)
             }
         }
 
         if (!state.bluetoothConnected) {
             Text(
-                "بلوتوث را وصل کنید تا نودها لود شوند",
+                stringResource(R.string.for_seeing_nodes_bluetooth_must_be_connected),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.bodySmall
             )
         }
 
@@ -164,9 +153,9 @@ private fun UdpNodeCard(
 ) {
     val colors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = MaterialTheme.colorScheme.onPrimary.copy(0.1f),
-        focusedTextColor = MaterialTheme.colorScheme.onBackground,
-        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(0.4f),
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -179,36 +168,29 @@ private fun UdpNodeCard(
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
             .padding(14.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(node.name, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
-                Text(stringResource(R.string.id_nodeid, node.nodeId), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(node.name, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "ID ${node.nodeId}" + if (node.ip.isNotBlank()) " · ${node.ip}" else "",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
             Switch(
                 checked = node.enabled,
                 onCheckedChange = onToggle,
                 enabled = enabledControls,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary
-                )
+                colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary)
             )
         }
-
         Spacer(Modifier.height(10.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = node.startPixel,
                 onValueChange = onStartChange,
                 modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.start)) },
+                label = { Text(stringResource(R.string.start_pixel)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(10.dp),
@@ -218,41 +200,37 @@ private fun UdpNodeCard(
                 value = node.endPixel,
                 onValueChange = onEndChange,
                 modifier = Modifier.weight(1f),
-                label = { Text(stringResource(R.string.end)) },
+                label = { Text(stringResource(R.string.end_pixel)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(10.dp),
                 colors = colors
             )
         }
-
         Spacer(Modifier.height(10.dp))
-
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.processor), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.width(10.dp))
             FilterChip(
                 selected = node.processorId == 0,
                 onClick = { onProcessor(0) },
-                label = { Text("Copy") },
+                label = { Text(stringResource(R.string.copy)) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.3f),
-                    selectedLabelColor = MaterialTheme.colorScheme.onBackground
+                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.3f)
                 )
             )
             Spacer(Modifier.width(6.dp))
             FilterChip(
                 selected = node.processorId == 1,
                 onClick = { onProcessor(1) },
-                label = { Text("Average") },
+                label = { Text(stringResource(R.string.average)) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.3f),
-                    selectedLabelColor = MaterialTheme.colorScheme.onBackground
+                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.3f)
                 )
             )
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onApplyMap, enabled = enabledControls) {
-                Text("Apply", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.apply), color = MaterialTheme.colorScheme.primary)
             }
         }
     }

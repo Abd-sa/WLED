@@ -1,7 +1,8 @@
 package com.samroid.wled.data.ambient
 
 /**
- * Per-side LED counts and strip traversal (UAL-style layout).
+ * LED strip layout. Employer rule: strip starts at middle of bottom edge,
+ * then goes e.g. bottom-right → right → top → left → bottom-left.
  */
 data class LedLayout(
     val top: Int = 60,
@@ -9,7 +10,8 @@ data class LedLayout(
     val bottom: Int = 60,
     val left: Int = 34,
     val clockwise: Boolean = true,
-    val startTopLeft: Boolean = true,
+    /** true = start at center of bottom edge (employer default) */
+    val startBottomCenter: Boolean = true,
     val enableTop: Boolean = true,
     val enableRight: Boolean = true,
     val enableBottom: Boolean = true,

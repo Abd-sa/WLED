@@ -106,9 +106,6 @@
     <string name="output_value">OUTPUT_VALUE ارسال شد</string>
     <string name="output">Output تأیید شد</string>
     <string name="output_confirm">خطا در OUTPUT_CONFIRM</string>
-    <string name="ambient_notification_channel">Ambient Light</string>
-    <string name="ambient_notification_title">Ambient light running</string>
-    <string name="ambient_notification_text">Streaming screen colors to LEDs</string>
     <string name="ambient_protocol">Protocol</string>
     <string name="ambient_protocol_ddp">DDP (port 4048)</string>
     <string name="ambient_protocol_udp_raw">UDP Raw (port 19446)</string>
@@ -198,4 +195,19 @@
     <string name="palette">پالت</string>
     <string name="speed">سرعت</string>
     <string name="intensity">شدت</string>
+
+    <string name="udp_stream_on">UDP stream enabled</string>
+    <string name="udp_stream_off">UDP stream disabled</string>
+    <string name="udp_stream_failed">UDP_STREAM_ENABLE failed</string>
+    <string name="udp_map_set_ok">UDP_MAP_SET for node %1$d</string>
+    <string name="udp_map_set_failed">UDP_MAP_SET failed for node %1$d</string>
+    <string name="udp_node_failed">UDP failed for node %1$d</string>
+    <string name="udp_node_started">UDP started for node %1$d</string>
+    <string name="udp_node_stopped">UDP stopped for node %1$d</string>
+    <string name="open_ambient_settings">Ambient light settings</string>
+    <string name="apply">Apply</string>
+    <string name="ambient_notification_channel">Ambient Light</string>
+    <string name="ambient_notification_title">Ambient light running</string>
+    <string name="ambient_notification_text">Streaming screen colors to LEDs</string>
+
 </resources>
