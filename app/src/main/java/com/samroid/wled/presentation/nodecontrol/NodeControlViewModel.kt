@@ -1,10 +1,13 @@
 package com.samroid.wled.presentation.nodecontrol
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.samroid.wled.R
 import com.samroid.wled.data.transport.DeviceTransport
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class NodeControlViewModel @Inject constructor(
     private val transport: DeviceTransport,
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -23,8 +27,14 @@ class NodeControlViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(NodeControlUiState(nodeId = nodeId))
     val uiState: StateFlow<NodeControlUiState> = _uiState.asStateFlow()
 
+    companion object {
+        const val SEG_RGB = 0
+        const val SEG_CCT = 1
+        const val OUT_RGB = 0
+        const val OUT_CCT = 1
+    }
+
     init {
-        // اگر NODE_INFO قبلاً آمده، CCT را از آن بردار
         viewModelScope.launch {
             transport.nodeInfo.collect { info ->
                 if (info != null && info.nodeId == nodeId) {
@@ -37,7 +47,6 @@ class NodeControlViewModel @Inject constructor(
                 }
             }
         }
-        // یک‌بار info بگیر
         viewModelScope.launch {
             transport.nodeInfoCmd(nodeId)
         }
@@ -47,47 +56,39 @@ class NodeControlViewModel @Inject constructor(
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
-    // ---- RGB ----
+    // ================= RGB =================
 
     fun setRgbOn(on: Boolean) {
         _uiState.update {
             it.copy(
                 rgbOn = on,
-                effectExpanded = if (on) it.effectExpanded else false,
-                paletteExpanded = if (on) it.paletteExpanded else false
+                rgbEffectExpanded = if (on) it.rgbEffectExpanded else false,
+                rgbPaletteExpanded = if (on) it.rgbPaletteExpanded else false
             )
         }
         viewModelScope.launch {
-            transport.onOff(nodeId, output = 0, on = on)
+            transport.onOff(nodeId, output = OUT_RGB, on = on)
         }
-    }
-
-    fun setCctOn(on: Boolean) {
-        _uiState.update { it.copy(cctOn = on) }
-        viewModelScope.launch {
-            transport.onOff(nodeId, output = 1, on = on)
-        }
-    }
-
-    fun applyColorFromPicker(r: Float, g: Float, b: Float) {
-        setColor(r, g, b)
-        commitColor()
     }
 
     fun setBrightnessRgb(value: Float) {
-        _uiState.update { it.copy(brightnessRgb = value) }
+        _uiState.update { it.copy(brightnessRgb = value.coerceIn(0f, 255f)) }
     }
 
     fun commitBrightnessRgb() {
         val v = _uiState.value.brightnessRgb.toInt().coerceIn(0, 255)
         viewModelScope.launch {
-            transport.setBrightness(nodeId, output = 0, brightness = v)
+            transport.setBrightness(nodeId, output = OUT_RGB, brightness = v)
         }
     }
 
     fun setColor(r: Float, g: Float, b: Float) {
         _uiState.update {
-            it.copy(colorR = r, colorG = g, colorB = b)
+            it.copy(
+                colorR = r.coerceIn(0f, 255f),
+                colorG = g.coerceIn(0f, 255f),
+                colorB = b.coerceIn(0f, 255f)
+            )
         }
     }
 
@@ -103,16 +104,73 @@ class NodeControlViewModel @Inject constructor(
         }
     }
 
-    // ---- CCT ----
+    fun setRgbEffectId(id: Int) {
+        val v = id.coerceIn(0, 159)
+        _uiState.update { it.copy(rgbEffectId = v, rgbEffectExpanded = false) }
+        viewModelScope.launch {
+            transport.setEffect(nodeId, segment = SEG_RGB, effectId = v)
+        }
+    }
 
+    fun setRgbPaletteId(id: Int) {
+        val v = id.coerceIn(0, 71)
+        _uiState.update { it.copy(rgbPaletteId = v, rgbPaletteExpanded = false) }
+        viewModelScope.launch {
+            transport.setEffectPal(nodeId, segment = SEG_RGB, paletteId = v)
+        }
+    }
 
+    fun setRgbEffectSpeed(value: Float) {
+        _uiState.update { it.copy(rgbEffectSpeed = value.coerceIn(0f, 255f)) }
+    }
+
+    fun commitRgbEffectSpeed() {
+        val v = _uiState.value.rgbEffectSpeed.toInt().coerceIn(0, 255)
+        viewModelScope.launch {
+            transport.setEffectSx(nodeId, segment = SEG_RGB, speed = v)
+        }
+    }
+
+    fun setRgbEffectIntensity(value: Float) {
+        _uiState.update { it.copy(rgbEffectIntensity = value.coerceIn(0f, 255f)) }
+    }
+
+    fun commitRgbEffectIntensity() {
+        val v = _uiState.value.rgbEffectIntensity.toInt().coerceIn(0, 255)
+        viewModelScope.launch {
+            transport.setEffectIx(nodeId, segment = SEG_RGB, intensity = v)
+        }
+    }
+
+    fun toggleRgbEffectMenu(expanded: Boolean) {
+        _uiState.update { it.copy(rgbEffectExpanded = expanded) }
+    }
+
+    fun toggleRgbPaletteMenu(expanded: Boolean) {
+        _uiState.update { it.copy(rgbPaletteExpanded = expanded) }
+    }
+
+    // ================= CCT =================
+
+    fun setCctOn(on: Boolean) {
+        _uiState.update {
+            it.copy(
+                cctOn = on,
+                cctEffectExpanded = if (on) it.cctEffectExpanded else false,
+                cctPaletteExpanded = if (on) it.cctPaletteExpanded else false
+            )
+        }
+        viewModelScope.launch {
+            transport.onOff(nodeId, output = OUT_CCT, on = on)
+        }
+    }
 
     fun setBrightnessCct(value: Float) {
-        _uiState.update { it.copy(brightnessCct = value) }
+        _uiState.update { it.copy(brightnessCct = value.coerceIn(0f, 255f)) }
     }
 
     fun setCctValue(value: Float) {
-        _uiState.update { it.copy(cctValue = value) }
+        _uiState.update { it.copy(cctValue = value.coerceIn(0f, 255f)) }
     }
 
     fun commitCct() {
@@ -125,51 +183,54 @@ class NodeControlViewModel @Inject constructor(
             )
         }
     }
-    fun setEffectId(id: Int) {
+
+    fun setCctEffectId(id: Int) {
         val v = id.coerceIn(0, 159)
-        _uiState.update { it.copy(effectId = v, effectExpanded = false) }
+        _uiState.update { it.copy(cctEffectId = v, cctEffectExpanded = false) }
         viewModelScope.launch {
-            transport.setEffect(nodeId, segment = 0, effectId = v)
+            transport.setEffect(nodeId, segment = SEG_CCT, effectId = v)
         }
     }
 
-    fun setPaletteId(id: Int) {
+    fun setCctPaletteId(id: Int) {
         val v = id.coerceIn(0, 71)
-        _uiState.update { it.copy(paletteId = v, paletteExpanded = false) }
+        _uiState.update { it.copy(cctPaletteId = v, cctPaletteExpanded = false) }
         viewModelScope.launch {
-            transport.setEffectPal(nodeId, segment = 0, paletteId = v)
+            transport.setEffectPal(nodeId, segment = SEG_CCT, paletteId = v)
         }
     }
 
-    fun setEffectSpeed(value: Float) {
-        _uiState.update { it.copy(effectSpeed = value) }
+    fun setCctEffectSpeed(value: Float) {
+        _uiState.update { it.copy(cctEffectSpeed = value.coerceIn(0f, 255f)) }
     }
 
-    fun commitEffectSpeed() {
-        val v = _uiState.value.effectSpeed.toInt().coerceIn(0, 255)
+    fun commitCctEffectSpeed() {
+        val v = _uiState.value.cctEffectSpeed.toInt().coerceIn(0, 255)
         viewModelScope.launch {
-            transport.setEffectSx(nodeId, segment = 0, speed = v)
+            transport.setEffectSx(nodeId, segment = SEG_CCT, speed = v)
         }
     }
 
-    fun setEffectIntensity(value: Float) {
-        _uiState.update { it.copy(effectIntensity = value) }
+    fun setCctEffectIntensity(value: Float) {
+        _uiState.update { it.copy(cctEffectIntensity = value.coerceIn(0f, 255f)) }
     }
 
-    fun commitEffectIntensity() {
-        val v = _uiState.value.effectIntensity.toInt().coerceIn(0, 255)
+    fun commitCctEffectIntensity() {
+        val v = _uiState.value.cctEffectIntensity.toInt().coerceIn(0, 255)
         viewModelScope.launch {
-            transport.setEffectIx(nodeId, segment = 0, intensity = v)
+            transport.setEffectIx(nodeId, segment = SEG_CCT, intensity = v)
         }
     }
 
-    fun toggleEffectMenu(expanded: Boolean) {
-        _uiState.update { it.copy(effectExpanded = expanded) }
+    fun toggleCctEffectMenu(expanded: Boolean) {
+        _uiState.update { it.copy(cctEffectExpanded = expanded) }
     }
 
-    fun togglePaletteMenu(expanded: Boolean) {
-        _uiState.update { it.copy(paletteExpanded = expanded) }
+    fun toggleCctPaletteMenu(expanded: Boolean) {
+        _uiState.update { it.copy(cctPaletteExpanded = expanded) }
     }
+
+    // ================= Presets =================
 
     fun savePreset(presetId: Int) {
         val id = presetId.coerceIn(1, 6)
@@ -181,9 +242,9 @@ class NodeControlViewModel @Inject constructor(
                     isPresetBusy = false,
                     savedPresets = if (ok) it.savedPresets + id else it.savedPresets,
                     lastPresetAction = when {
-                        !ok -> "خطا در ذخیره پریست $id"
-                        id == 1 -> "پریست ۱ ذخیره شد (Apply on Boot)"
-                        else -> "پریست $id ذخیره شد"
+                        !ok -> context.getString(R.string.preset_save_failed, id)
+                        id == 1 -> context.getString(R.string.preset_1_saved_boot)
+                        else -> context.getString(R.string.preset_saved, id)
                     }
                 )
             }
@@ -198,7 +259,11 @@ class NodeControlViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isPresetBusy = false,
-                    lastPresetAction = if (ok) "پریست $id بارگذاری شد" else "خطا در بارگذاری پریست $id"
+                    lastPresetAction = if (ok) {
+                        context.getString(R.string.preset_loaded, id)
+                    } else {
+                        context.getString(R.string.preset_load_failed, id)
+                    }
                 )
             }
         }

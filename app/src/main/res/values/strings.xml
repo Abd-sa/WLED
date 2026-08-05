@@ -102,10 +102,6 @@
     <string name="failed_to_send_network_config">Failed to send NETWORK_CONFIG</string>
     <string name="search">Search…</string>
     <string name="no_results">No results</string>
-    <string name="effect">Effect</string>
-    <string name="palette">Palette</string>
-    <string name="speed">Speed</string>
-    <string name="intensity">Intensity</string>
     <string name="cct_0_255">پین‌های CCT باید 0 تا 255 باشند</string>
     <string name="output_value">OUTPUT_VALUE ارسال شد</string>
     <string name="output">Output تأیید شد</string>
@@ -190,5 +186,19 @@
     <string name="confirm">Confirm</string>
     <string name="summary">Summary</string>
     <string name="length">Length</string>
+
+    <string name="rgb_effect">RGB effect</string>
+    <string name="cct_effect">CCT effect</string>
+    <string name="save_preset">Save preset</string>
+    <string name="load_preset">Load preset</string>
+    <string name="preset_saved">Preset %1$d saved</string>
+    <string name="preset_1_saved_boot">Preset 1 saved (apply on boot)</string>
+    <string name="preset_save_failed">Failed to save preset %1$d</string>
+    <string name="preset_loaded">Preset %1$d loaded</string>
+    <string name="preset_load_failed">Failed to load preset %1$d</string>
+    <string name="effect">Effect</string>
+    <string name="palette">Palette</string>
+    <string name="speed">Speed</string>
+    <string name="intensity">Intensity</string>
 
 </resources>

@@ -1,5 +1,6 @@
 package com.samroid.wled.presentation.nodecontrol
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,17 +12,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.samroid.wled.R
 import com.samroid.wled.presentation.theme.AppColors.Brand.Green
-import com.samroid.wled.presentation.theme.AppColors.Brand.Purple
 
 @Composable
 fun PresetsSection(
@@ -36,15 +35,14 @@ fun PresetsSection(
             Text(
                 text = message,
                 color = Green,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
         }
 
-        // ---- Save ----
         SectionCard {
             Text(
-                "Save Preset",
+                stringResource(R.string.save_preset),
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.titleMedium
             )
@@ -55,7 +53,6 @@ fun PresetsSection(
                 style = MaterialTheme.typography.bodySmall
             )
             Spacer(Modifier.height(14.dp))
-
             PresetButtonRow(
                 selectedHint = savedPresets,
                 highlightBoot = true,
@@ -66,15 +63,13 @@ fun PresetsSection(
 
         Spacer(Modifier.height(14.dp))
 
-        // ---- Load ----
         SectionCard {
             Text(
-                "Load Preset",
+                stringResource(R.string.load_preset),
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(14.dp))
-
             PresetButtonRow(
                 selectedHint = savedPresets,
                 highlightBoot = false,
@@ -87,7 +82,7 @@ fun PresetsSection(
         Text(
             stringResource(R.string.apply_on_boot),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style =MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall
         )
     }
 }
@@ -99,42 +94,49 @@ private fun PresetButtonRow(
     enabled: Boolean,
     onClick: (Int) -> Unit
 ) {
-    Row (
+    Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         (1..6).forEach { id ->
             val isBoot = id == 1
             val saved = id in selectedHint
+            val filled = saved || (highlightBoot && isBoot)
 
-            Button (
-                onClick = { onClick(id) },
-                enabled = enabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = when {
-                        highlightBoot && isBoot -> MaterialTheme.colorScheme.primary
-                        saved -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                        else -> MaterialTheme.colorScheme.surfaceVariant
-                    },
-                    contentColor = MaterialTheme.colorScheme.onBackground,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                border = if (!saved && !(highlightBoot && isBoot)) {
-                    androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.1f)
+            if (filled) {
+                Button(
+                    onClick = { onClick(id) },
+                    enabled = enabled,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (highlightBoot && isBoot) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                        },
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     )
-                } else null
-            ) {
-                Text(
-                    text = id.toString(),
-
-                    style =MaterialTheme.typography.titleMedium.copy(fontWeight = if (isBoot) FontWeight.Bold else FontWeight.Medium)
-                )
+                ) {
+                    Text(
+                        id.toString(),
+                        fontWeight = if (isBoot) FontWeight.Bold else FontWeight.Medium
+                    )
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { onClick(id) },
+                    enabled = enabled,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(0.4f))
+                ) {
+                    Text(id.toString())
+                }
             }
         }
     }

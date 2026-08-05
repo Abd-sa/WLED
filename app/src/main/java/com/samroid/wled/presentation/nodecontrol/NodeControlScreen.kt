@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,18 +46,13 @@ import com.samroid.wled.presentation.theme.AppColors.Brand.Green
 @Composable
 fun NodeControlScreen(
     onBack: () -> Unit,
-    onOpenPresets: () -> Unit = {},
     viewModel: NodeControlViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val colorController = rememberColorPickerController()
 
-    val effectItems = remember {
-        (0..159).map { it to EffectCatalog.effectLabel(it) }
-    }
-    val paletteItems = remember {
-        (0..71).map { it to EffectCatalog.paletteLabel(it) }
-    }
+    val effectItems = remember { (0..159).map { it to EffectCatalog.effectLabel(it) } }
+    val paletteItems = remember { (0..71).map { it to EffectCatalog.paletteLabel(it) } }
 
     Column(
         modifier = Modifier
@@ -86,8 +80,7 @@ fun NodeControlScreen(
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Text(
-                    text = stringResource(R.string.id_nodeid, state.nodeId),
-                    //text = state.nodeId,
+                    stringResource(R.string.node, state.nodeId),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.titleSmall
                 )
@@ -109,6 +102,7 @@ fun NodeControlScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        // Tabs
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -133,10 +127,10 @@ fun NodeControlScreen(
         Spacer(Modifier.height(20.dp))
 
         if (state.selectedTab == ControlTab.CONTROL) {
-            // ---- RGB ----
+            // ---------- RGB ----------
             SectionCard {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -151,7 +145,6 @@ fun NodeControlScreen(
                     )
                 }
 
-                // جزئیات فقط وقتی RGB روشن است
                 if (state.rgbOn) {
                     Spacer(Modifier.height(14.dp))
                     LabelValue(
@@ -172,7 +165,6 @@ fun NodeControlScreen(
                     )
                     Spacer(Modifier.height(8.dp))
 
-                    // Color Picker
                     HsvColorPicker(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -186,16 +178,15 @@ fun NodeControlScreen(
                         ),
                         onColorChanged = { envelope ->
                             val c = envelope.color
-                            val r = (c.red * 255f).coerceIn(0f, 255f)
-                            val g = (c.green * 255f).coerceIn(0f, 255f)
-                            val b = (c.blue * 255f).coerceIn(0f, 255f)
-                            // اسلایدرها لحظه‌ای
-                            viewModel.setColor(r, g, b)
+                            viewModel.setColor(
+                                c.red * 255f,
+                                c.green * 255f,
+                                c.blue * 255f
+                            )
                         }
                     )
 
                     Spacer(Modifier.height(8.dp))
-                    // پیش‌نمایش
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -210,13 +201,10 @@ fun NodeControlScreen(
                             )
                             .border(
                                 1.dp,
-                                MaterialTheme.colorScheme.onPrimary.copy(0.08f),
+                                MaterialTheme.colorScheme.outline.copy(0.3f),
                                 RoundedCornerShape(10.dp)
                             )
-                            .clickable {
-                                // رها کردن انگشت روی picker گاهی commit نمی‌شود؛ دکمه/نوار هم commit
-                                viewModel.commitColor()
-                            }
+                            .clickable { viewModel.commitColor() }
                     )
 
                     Spacer(Modifier.height(10.dp))
@@ -248,77 +236,56 @@ fun NodeControlScreen(
                         onValueChangeFinished = viewModel::commitColor
                     )
 
-                    Spacer(Modifier.height(14.dp))
-                    SectionCard {
-                        Text(
-                            stringResource(R.string.effect),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(Modifier.height(12.dp))
-
-                        Text(
-                            stringResource(R.string.effect),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        DropdownSelector(
-                            label = EffectCatalog.effectLabel(state.effectId),
-                            expanded = state.effectExpanded,
-                            onExpandedChange = viewModel::toggleEffectMenu,
-                            items = effectItems,
-                            onSelect = viewModel::setEffectId,
-                            searchable = true
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            stringResource(R.string.palette),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        DropdownSelector(
-                            label = EffectCatalog.paletteLabel(state.paletteId),
-                            expanded = state.paletteExpanded,
-                            onExpandedChange = viewModel::togglePaletteMenu,
-                            items = paletteItems,
-                            onSelect = viewModel::setPaletteId,
-                            searchable = true
-                        )
-
-                        Spacer(Modifier.height(14.dp))
-                        LabelValue(
-                            stringResource(R.string.speed),
-                            state.effectSpeed.toInt().toString()
-                        )
-                        ControlSlider(
-                            value = state.effectSpeed,
-                            onValueChange = viewModel::setEffectSpeed,
-                            onValueChangeFinished = viewModel::commitEffectSpeed
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-                        LabelValue(
-                            stringResource(R.string.intensity),
-                            state.effectIntensity.toInt().toString()
-                        )
-                        ControlSlider(
-                            value = state.effectIntensity,
-                            onValueChange = viewModel::setEffectIntensity,
-                            onValueChangeFinished = viewModel::commitEffectIntensity
-                        )
-                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        stringResource(R.string.rgb_effect),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    DropdownSelector(
+                        label = EffectCatalog.effectLabel(state.rgbEffectId),
+                        expanded = state.rgbEffectExpanded,
+                        onExpandedChange = viewModel::toggleRgbEffectMenu,
+                        items = effectItems,
+                        onSelect = viewModel::setRgbEffectId
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    DropdownSelector(
+                        label = EffectCatalog.paletteLabel(state.rgbPaletteId),
+                        expanded = state.rgbPaletteExpanded,
+                        onExpandedChange = viewModel::toggleRgbPaletteMenu,
+                        items = paletteItems,
+                        onSelect = viewModel::setRgbPaletteId
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    LabelValue(
+                        stringResource(R.string.speed),
+                        state.rgbEffectSpeed.toInt().toString()
+                    )
+                    ControlSlider(
+                        value = state.rgbEffectSpeed,
+                        onValueChange = viewModel::setRgbEffectSpeed,
+                        onValueChangeFinished = viewModel::commitRgbEffectSpeed
+                    )
+                    LabelValue(
+                        stringResource(R.string.intensity),
+                        state.rgbEffectIntensity.toInt().toString()
+                    )
+                    ControlSlider(
+                        value = state.rgbEffectIntensity,
+                        onValueChange = viewModel::setRgbEffectIntensity,
+                        onValueChangeFinished = viewModel::commitRgbEffectIntensity
+                    )
                 }
             }
 
-            // ---- CCT ----
+            // ---------- CCT (only if enabled) ----------
             if (state.cctEnabled) {
                 Spacer(Modifier.height(14.dp))
                 SectionCard {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -359,7 +326,7 @@ fun NodeControlScreen(
                                     Brush.horizontalGradient(
                                         listOf(
                                             Color(0xFFFFB74D),
-                                            MaterialTheme.colorScheme.onPrimary,
+                                            Color.White,
                                             Color(0xFF90CAF9)
                                         )
                                     )
@@ -370,6 +337,48 @@ fun NodeControlScreen(
                             color = Color(0xFFFFB74D),
                             onValueChange = viewModel::setCctValue,
                             onValueChangeFinished = viewModel::commitCct
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            stringResource(R.string.cct_effect),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        DropdownSelector(
+                            label = EffectCatalog.effectLabel(state.cctEffectId),
+                            expanded = state.cctEffectExpanded,
+                            onExpandedChange = viewModel::toggleCctEffectMenu,
+                            items = effectItems,
+                            onSelect = viewModel::setCctEffectId
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        DropdownSelector(
+                            label = EffectCatalog.paletteLabel(state.cctPaletteId),
+                            expanded = state.cctPaletteExpanded,
+                            onExpandedChange = viewModel::toggleCctPaletteMenu,
+                            items = paletteItems,
+                            onSelect = viewModel::setCctPaletteId
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        LabelValue(
+                            stringResource(R.string.speed),
+                            state.cctEffectSpeed.toInt().toString()
+                        )
+                        ControlSlider(
+                            value = state.cctEffectSpeed,
+                            onValueChange = viewModel::setCctEffectSpeed,
+                            onValueChangeFinished = viewModel::commitCctEffectSpeed
+                        )
+                        LabelValue(
+                            stringResource(R.string.intensity),
+                            state.cctEffectIntensity.toInt().toString()
+                        )
+                        ControlSlider(
+                            value = state.cctEffectIntensity,
+                            onValueChange = viewModel::setCctEffectIntensity,
+                            onValueChangeFinished = viewModel::commitCctEffectIntensity
                         )
                     }
                 }
@@ -386,12 +395,7 @@ fun NodeControlScreen(
 
         Spacer(Modifier.height(24.dp))
     }
-
-    // وقتی کاربر انگشت را از روی picker برمی‌دارد — commit رنگ
-    // (کتابخانه onColorChanged مداوم می‌دهد؛ commit روی پایان درگ با preview click هم هست)
 }
-
-// ---- helpers (اگر در فایل جدا هستند همان‌ها را نگه دار) ----
 
 @Composable
 fun SectionCard(content: @Composable () -> Unit) {
@@ -412,8 +416,16 @@ fun LabelValue(label: String, value: String) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
-        Text(value, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleSmall)
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.titleSmall
+        )
+        Text(
+            value,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.titleSmall
+        )
     }
     Spacer(Modifier.height(4.dp))
 }

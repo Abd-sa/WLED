@@ -102,10 +102,6 @@
     <string name="failed_to_send_network_config">Failed to send NETWORK_CONFIG</string>
     <string name="search">جستجو…</string>
     <string name="no_results">نتیجه‌ای نیست</string>
-    <string name="effect">افکت</string>
-    <string name="palette">پالت</string>
-    <string name="speed">سرعت</string>
-    <string name="intensity">شدت</string>
     <string name="cct_0_255">پین‌های CCT باید 0 تا 255 باشند</string>
     <string name="output_value">OUTPUT_VALUE ارسال شد</string>
     <string name="output">Output تأیید شد</string>
@@ -189,4 +185,17 @@
     <string name="confirm">تأیید</string>
     <string name="summary">خلاصه</string>
     <string name="length">طول</string>
+    <string name="rgb_effect">افکت RGB</string>
+    <string name="cct_effect">افکت CCT</string>
+    <string name="save_preset">ذخیره پریست</string>
+    <string name="load_preset">بارگذاری پریست</string>
+    <string name="preset_saved">پریست %1$d ذخیره شد</string>
+    <string name="preset_1_saved_boot">پریست ۱ ذخیره شد (روشن شدن بعد از قطع برق)</string>
+    <string name="preset_save_failed">خطا در ذخیره پریست %1$d</string>
+    <string name="preset_loaded">پریست %1$d بارگذاری شد</string>
+    <string name="preset_load_failed">خطا در بارگذاری پریست %1$d</string>
+    <string name="effect">افکت</string>
+    <string name="palette">پالت</string>
+    <string name="speed">سرعت</string>
+    <string name="intensity">شدت</string>
 </resources>
