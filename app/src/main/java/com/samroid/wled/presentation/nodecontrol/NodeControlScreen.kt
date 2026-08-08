@@ -371,9 +371,9 @@ fun NodeControlScreen(
                                 .background(
                                     Brush.horizontalGradient(
                                         listOf(
-                                            Color(0xFFFFB74D),
+                                            Color(0xFF90CAF9),
                                             Color.White,
-                                            Color(0xFF90CAF9)
+                                            Color(0xFFFFB74D)
                                         )
                                     )
                                 )
@@ -481,9 +481,9 @@ fun cctPreviewPrimary(brightness: Float, cct: Float): Color {
     val t = (cct / 255f).coerceIn(0f, 1f)
 
     // Warm (amber) → Neutral white → Cool (sky blue)
-    val warm =Color(0xFF90CAF9)
+    val warm =Color(0xFFFFB74D)
     val neutral = Color(0xFFFFF8E7)
-    val cool = Color(0xFFFFB74D)
+    val cool = Color(0xFF90CAF9)
 
     val base = when {
         t < 0.5f -> {

@@ -108,7 +108,7 @@ fun NodeInfoScreen(
 
         InfoSection(title = stringResource(R.string.information)) {
             // Employer required fields
-            InfoRow(stringResource(R.string.id_nodeid), state.nodeId.toString())
+            InfoRow(stringResource(R.string.nodeid), state.nodeId.toString())
             InfoRow(stringResource(R.string.device_id), info?.deviceId?.ifBlank { dash } ?: dash)
             InfoRow(stringResource(R.string.ip_address), info?.ip?.ifBlank { dash } ?: dash)
             InfoRow(

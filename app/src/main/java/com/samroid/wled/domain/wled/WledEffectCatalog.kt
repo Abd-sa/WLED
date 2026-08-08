@@ -9,7 +9,7 @@ object WledEffectCatalog {
 
     /** Full list id → name (0..159). Unknown slots keep a fallback name. */
     val all: List<WledEffect> by lazy {
-        val names = BASE_NAMES
+        val names = NAMES
         (0 until 160).map { id ->
             WledEffect(id, names.getOrElse(id) { "Effect $id" })
         }
@@ -34,38 +34,48 @@ object WledEffectCatalog {
      * then common later effects through ~159 used in newer builds.
      * If firmware has fewer/more modes, labels may differ but IDs still match protocol.
      */
-    private val BASE_NAMES: List<String> = listOf(
-        // 0–9
-        "Solid", "Blink", "Breathe", "Wipe", "Wipe Random", "Random Colors", "Sweep", "Dynamic", "Colorloop", "Rainbow",
-        // 10–19
-        "Scan", "Scan Dual", "Fade", "Theater", "Theater Rainbow", "Running", "Saw", "Twinkle", "Dissolve", "Dissolve Rnd",
-        // 20–29
-        "Sparkle", "Sparkle Dark", "Sparkle+", "Strobe", "Strobe Rainbow", "Strobe Mega", "Blink Rainbow", "Android", "Chase", "Chase Random",
-        // 30–39
-        "Chase Rainbow", "Chase Flash", "Chase Flash Rnd", "Rainbow Runner", "Colorful", "Traffic Light", "Sweep Random", "Running 2", "Red & Blue", "Stream",
-        // 40–49
-        "Scanner", "Lighthouse", "Fireworks", "Rain", "Merry Christmas", "Fire Flicker", "Gradient", "Loading", "Police", "Police All",
-        // 50–59
-        "Two Dots", "Two Areas", "Circus", "Halloween", "Tri Chase", "Tri Wipe", "Tri Fade", "Lightning", "ICU", "Multi Comet",
-        // 60–69
-        "Scanner Dual", "Stream 2", "Oscillate", "Pride 2015", "Juggle", "Palette", "Fire 2012", "Colorwaves", "BPM", "Fill Noise",
-        // 70–79
-        "Noise 1", "Noise 2", "Noise 3", "Noise 4", "Colortwinkles", "Lake", "Meteor", "Meteor Smooth", "Railway", "Ripple",
-        // 80–89
-        "Twinklefox", "Twinklecat", "Halloween Eyes", "Solid Pattern", "Solid Pattern Tri", "Spots", "Spots Fade", "Glitter", "Candle", "Fireworks Starburst",
-        // 90–99
-        "Fireworks 1D", "Bouncing Balls", "Sinelon", "Sinelon Dual", "Sinelon Rainbow", "Popcorn", "Drip", "Plasma", "Percent", "Ripple Rainbow",
-        // 100–109
-        "Heartbeat", "Pacifica", "Candle Multi", "Solid Glitter", "Sunrise", "Phased", "Twinkleup", "Noise Pal", "Sine", "Phased Noise",
-        // 110–117 classic end in older FX.h
-        "Flow", "Chunchun", "Dancing Shadows", "Washing Machine", "Candy Cane", "Blends", "TV Simulator", "Dynamic Smooth",
-        // 118–129 (common post-0.13 names; may vary by firmware)
-        "Spaceships", "Crash", "Puddlepeak", "Midnoise", "Noisemove", "Pixelwave", "Juggles", "Matripix", "Gravimeter", "Plasmoid",
-        "Puddles", "Pixels",
-        // 130–149
-        "Blurz", "DJ Light", "Freqwave", "Noisefire", "Noisemeter", "Waterfall", "Ripple Peak", "Binmap", "Noisefire 2", "Freqmatrix",
-        "Freqpixels", "Noisemeter 2", "Audio bars", "Noise 5", "GEQ", "Bandmap", "Noise 6", "Noise 7", "Rocktaves", "Noise 8",
-        // 150–159
-        "Akemi", "2D Square", "2D Hypnotic", "2D Distortion Waves", "2D Soap", "2D Noise", "2D Matrix", "2D Game Of Life", "2D Tartan", "2D Polar Lights"
+    val NAMES: List<String> = listOf(
+//        // 0–9
+//        "Solid", "Blink", "Breathe", "Wipe", "Wipe Random", "Random Colors", "Sweep", "Dynamic", "Colorloop", "Rainbow",
+//        // 10–19
+//        "Scan", "Scan Dual", "Fade", "Theater", "Theater Rainbow", "Running", "Saw", "Twinkle", "Dissolve", "Dissolve Rnd",
+//        // 20–29
+//        "Sparkle", "Sparkle Dark", "Sparkle+", "Strobe", "Strobe Rainbow", "Strobe Mega", "Blink Rainbow", "Android", "Chase", "Chase Random",
+//        // 30–39
+//        "Chase Rainbow", "Chase Flash", "Chase Flash Rnd", "Rainbow Runner", "Colorful", "Traffic Light", "Sweep Random", "Running 2", "Red & Blue", "Stream",
+//        // 40–49
+//        "Scanner", "Lighthouse", "Fireworks", "Rain", "Merry Christmas", "Fire Flicker", "Gradient", "Loading", "Police", "Police All",
+//        // 50–59
+//        "Two Dots", "Two Areas", "Circus", "Halloween", "Tri Chase", "Tri Wipe", "Tri Fade", "Lightning", "ICU", "Multi Comet",
+//        // 60–69
+//        "Scanner Dual", "Stream 2", "Oscillate", "Pride 2015", "Juggle", "Palette", "Fire 2012", "Colorwaves", "BPM", "Fill Noise",
+//        // 70–79
+//        "Noise 1", "Noise 2", "Noise 3", "Noise 4", "Colortwinkles", "Lake", "Meteor", "Meteor Smooth", "Railway", "Ripple",
+//        // 80–89
+//        "Twinklefox", "Twinklecat", "Halloween Eyes", "Solid Pattern", "Solid Pattern Tri", "Spots", "Spots Fade", "Glitter", "Candle", "Fireworks Starburst",
+//        // 90–99
+//        "Fireworks 1D", "Bouncing Balls", "Sinelon", "Sinelon Dual", "Sinelon Rainbow", "Popcorn", "Drip", "Plasma", "Percent", "Ripple Rainbow",
+//        // 100–109
+//        "Heartbeat", "Pacifica", "Candle Multi", "Solid Glitter", "Sunrise", "Phased", "Twinkleup", "Noise Pal", "Sine", "Phased Noise",
+//        // 110–117 classic end in older FX.h
+//        "Flow", "Chunchun", "Dancing Shadows", "Washing Machine", "Candy Cane", "Blends", "TV Simulator", "Dynamic Smooth",
+//        // 118–129 (common post-0.13 names; may vary by firmware)
+//        "Spaceships", "Crash", "Puddlepeak", "Midnoise", "Noisemove", "Pixelwave", "Juggles", "Matripix", "Gravimeter", "Plasmoid",
+//        "Puddles", "Pixels",
+//        // 130–149
+//        "Blurz", "DJ Light", "Freqwave", "Noisefire", "Noisemeter", "Waterfall", "Ripple Peak", "Binmap", "Noisefire 2", "Freqmatrix",
+//        "Freqpixels", "Noisemeter 2", "Audio bars", "Noise 5", "GEQ", "Bandmap", "Noise 6", "Noise 7", "Rocktaves", "Noise 8",
+//        // 150–159
+//        "Akemi", "2D Square", "2D Hypnotic", "2D Distortion Waves", "2D Soap", "2D Noise", "2D Matrix", "2D Game Of Life", "2D Tartan", "2D Polar Lights"
+
+         "Solid", "Blink", "Breathe", "Wipe", "Wipe Random", "Random Colors", "Sweep", "Dynamic", "Colorloop", "Rainbow", "Scan", "Scan Dual", "Fade", "Theater", "Theater Rainbow", "Running", "Saw", "Twinkle", "Dissolve", "Dissolve Rnd", "Sparkle", "Sparkle Dark", "Sparkle+", "Strobe", "Strobe Rainbow", "Strobe Mega", "Blink Rainbow", "Android", "Chase", "Chase Random", "Chase Rainbow", "Chase Flash", "Chase Flash Rnd", "Rainbow Runner", "Colorful", "Traffic Light", "Sweep Random", "Chase 2", "Aurora", "Stream", "Scanner", "Lighthouse", "Fireworks", "Rain", "Tetrix", "Fire Flicker", "Gradient", "Loading", "Rolling Balls", "Fairy", "Two Dots", "Fairytwinkle", "Running Dual", "RSVD", "Chase 3", "Tri Wipe", "Tri Fade", "Lightning", "ICU", "Multi Comet", "Scanner Dual", "Stream 2", "Oscillate", "Pride 2015", "Juggle", "Palette", "Fire 2012", "Colorwaves", "Bpm", "Fill Noise", "Noise 1", "Noise 2", "Noise 3", "Noise 4", "Colortwinkles", "Lake", "Meteor", "Copy Segment", "Railway", "Ripple", "Twinklefox", "Twinklecat", "Halloween Eyes", "Solid Pattern", "Solid Pattern Tri", "Spots", "Spots Fade", "Glitter", "Candle", "Fireworks Starburst", "Fireworks 1D", "Bouncing Balls", "Sinelon", "Sinelon Dual", "Sinelon Rainbow", "Popcorn", "Drip", "Plasma", "Percent", "Ripple Rainbow", "Heartbeat", "Pacifica", "Candle Multi", "Solid Glitter", "Sunrise", "Phased", "Twinkleup", "Noise Pal", "Sine", "Phased Noise", "Flow", "Chunchun", "Dancing Shadows", "Washing Machine", "Rotozoomer", "Blends", "TV Simulator", "Dynamic Smooth", "Spaceships", "Crazy Bees", "Ghost Rider", "Blobs", "Scrolling Text", "Drift Rose", "Distortion Waves", "Soap", "Octopus", "Waving Cell", "Pixels", "Pixelwave", "Juggles", "Matripix", "Gravimeter", "Plasmoid", "Puddles", "Midnoise", "Noisemeter", "Freqwave", "Freqmatrix", "GEQ", "Waterfall", "Freqpixels", "RSVD", "Noisefire", "Puddlepeak", "Noisemove", "Noise2D", "Perlin Move", "Ripple Peak", "Firenoise", "Squared Swirl", "PacMan", "DNA", "Matrix", "Metaballs", "Freqmap", "Gravcenter", "Gravcentric", "Gravfreq", "DJ Light", "Funky Plank", "Shimmer", "Pulser", "Blurz", "Drift", "Waverly", "Sun Radiation", "Colored Bursts", "Julia", "RSVD", "RSVD", "RSVD", "Game Of Life", "Tartan", "Polar Lights", "Swirl", "Lissajous", "Frizzles", "Plasma Ball", "Flow Stripe", "Hiphotic", "Sindots", "DNA Spiral", "Black Hole", "Wavesins", "Rocktaves", "Akemi", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "RSVD", "PS DripDrop", "PS Pinball", "PS Dancing Shadows", "PS Fireworks 1D", "PS Sparkler", "PS Hourglass", "PS Spray 1D", "PS 1D Balance", "PS Chase", "PS Starburst", "PS GEQ 1D", "PS Fire 1D", "PS Sonic Stream", "PS Sonic Boom", "PS Springy", "RSVD", "Color Clouds", "Slow Transition"
     )
+
+    val MAX_ID: Int get() = NAMES.lastIndex
+
+    fun name(id: Int): String =
+        NAMES.getOrElse(id) { "Unknown($id)" }
+
+    fun isReserved(id: Int): Boolean =
+        name(id) == "RSVD"
 }

@@ -42,7 +42,3 @@ data class NodeControlUiState(
 
 enum class ControlTab { CONTROL, PRESETS }
 
-object EffectCatalog {
-    fun effectLabel(id: Int) = WledEffectCatalog.nameOf(id)
-    fun paletteLabel(id: Int) = WledPaletteCatalog.nameOf(id)
-}
