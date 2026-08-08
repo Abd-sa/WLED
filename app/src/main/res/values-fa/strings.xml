@@ -209,5 +209,8 @@
     <string name="ambient_notification_channel">Ambient Light</string>
     <string name="ambient_notification_title">Ambient light running</string>
     <string name="ambient_notification_text">Streaming screen colors to LEDs</string>
+    <string name="open_location_settings">open location settings</string>
+    <string name="location_required_body">location required body</string>
+    <string name="location_required_title">location required title</string>
 
 </resources>

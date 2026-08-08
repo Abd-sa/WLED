@@ -43,7 +43,7 @@ class AppPreferences @Inject constructor(
 
                 preferences ->
 
-            preferences[LANGUAGE] ?: "en"
+            preferences[LANGUAGE] ?: "fa"
 
         }
 

@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bluetooth
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.AlertDialog
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -51,7 +54,7 @@ import com.samroid.wled.domain.model.TransportConnectionState
 import com.samroid.wled.domain.model.TransportDevice
 import com.samroid.wled.presentation.theme.AppColors.Brand.Green
 import com.samroid.wled.presentation.theme.AppColors.Brand.Red
-
+import com.samroid.wled.utils.LocationHelper
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +79,8 @@ fun BluetoothConnectionSheet(
             onDisconnect = viewModel::disconnect,
             onPing = viewModel::ping,
             onClearLog = viewModel::clearLog,
-            onClose = onDismiss
+            onClose = onDismiss,
+            viewModel = viewModel
         )
     }
 }
@@ -84,6 +88,7 @@ fun BluetoothConnectionSheet(
 @Composable
 fun BluetoothConnectionContent(
     state: BluetoothConnectionUiState,
+    viewModel: BluetoothConnectionViewModel,
     onStartScan: () -> Unit,
     onStopScan: () -> Unit,
     onConnect: (String) -> Unit,
@@ -159,7 +164,8 @@ fun BluetoothConnectionContent(
                     onClick = onPing,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
+
                 ) {
                     Text(stringResource(R.string.ping))
                 }
@@ -234,6 +240,27 @@ fun BluetoothConnectionContent(
                     modifier = Modifier.padding(vertical = 1.dp)
                 )
             }
+        }
+        val context = LocalContext.current
+        if (state.showEnableLocationPrompt) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissLocationPrompt() },
+                title = { Text(stringResource(R.string.location_required_title)) },
+                text = { Text(stringResource(R.string.location_required_body)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.dismissLocationPrompt()
+                        LocationHelper.openLocationSettings(context)
+                    }) {
+                        Text(stringResource(R.string.open_location_settings))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.dismissLocationPrompt() }) {
+                        Text(stringResource(R.string.no))
+                    }
+                }
+            )
         }
     }
 }

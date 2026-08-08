@@ -10,5 +10,6 @@ data class BluetoothConnectionUiState(
     val isScanning: Boolean = false,
     val lastResponse: String? = null,
     val logLines: List<String> = emptyList(),
-    val connectingDeviceId: String? = null
+    val connectingDeviceId: String? = null,
+    val showEnableLocationPrompt: Boolean = false
 )

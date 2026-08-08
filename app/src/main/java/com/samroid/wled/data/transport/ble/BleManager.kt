@@ -13,8 +13,12 @@ import android.bluetooth.BluetoothStatusCodes
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
+import androidx.core.content.ContextCompat
 import com.samroid.wled.R
 import com.samroid.wled.data.protocol.Protocol
 import com.samroid.wled.data.protocol.ResponseParser
@@ -87,7 +91,8 @@ class BleManager(private val context: Context) {
     private val _controllerInfo = MutableStateFlow<ControllerInfo?>(null)
     val controllerInfo: StateFlow<ControllerInfo?> = _controllerInfo.asStateFlow()
 
-
+    private var bondReceiver: BroadcastReceiver? = null
+    private var pendingBondAddress: String? = null
 
     // ------------------- Scan -------------------
 
@@ -162,34 +167,232 @@ class BleManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun connect(device: BluetoothDevice) {
-
         stopScan()
-
+        unregisterBondReceiver()
 
         _Transport_connectionState.value = TransportConnectionState.CONNECTING
         addLog("Connecting to ${device.name ?: device.address} ...")
 
         try {
-            gatt =
-                device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+            gatt = device.connectGatt(
+                context,
+                false,
+                gattCallback,
+                BluetoothDevice.TRANSPORT_LE
+            )
+        } catch (e: SecurityException) {
+            addLog("Connect permission denied: ${e.message}")
+            _Transport_connectionState.value = TransportConnectionState.ERROR
         } catch (e: Exception) {
             addLog("Failed to Connect ${e.message}")
             _Transport_connectionState.value = TransportConnectionState.ERROR
         }
     }
-
     @SuppressLint("MissingPermission")
     fun disconnect() {
+        unregisterBondReceiver()
         try {
             gatt?.disconnect()
             gatt?.close()
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         gatt = null
         writeChar = null
         notifyChar = null
         packetBuffer.clear()
         _Transport_connectionState.value = TransportConnectionState.DISCONNECTED
     }
+
+    /**
+     * Called when GATT is usable for I/O setup (services + optional notify).
+     * Only transitions to CONNECTED after bond is done (or already bonded / not required).
+     */
+
+    @SuppressLint("MissingPermission")
+    private fun onReadyToMarkConnected(gatt: BluetoothGatt) {
+        val device = gatt.device
+        addLog("Link ready check — bondState=${device.bondState}")
+
+        // Already paired
+        if (device.bondState == BluetoothDevice.BOND_BONDED) {
+            finishAsConnected("already bonded")
+            return
+        }
+
+        // Stay CONNECTING until bond or timeout
+        _Transport_connectionState.value = TransportConnectionState.CONNECTING
+
+        // 1) Register receiver FIRST (avoid missing BOND_BONDED)
+        waitForBond(device)
+
+        // 2) Request bond only if not already bonding
+        if (device.bondState == BluetoothDevice.BOND_NONE) {
+            try {
+                val started = device.createBond()
+                addLog("createBond() started=$started — accept pairing notification if shown")
+            } catch (e: Exception) {
+                addLog("createBond error: ${e.message}")
+            }
+        } else {
+            addLog("Bond already in progress — accept pairing notification")
+        }
+
+        // 3) Poll + timeout (BroadcastReceiver alone is not reliable)
+        scope.launch {
+            val address = device.address
+            val deadline = System.currentTimeMillis() + 45_000
+
+            while (System.currentTimeMillis() < deadline) {
+                delay(500)
+
+                // State already moved on (user disconnected / error)
+                val st = _Transport_connectionState.value
+                if (st == TransportConnectionState.CONNECTED ||
+                    st == TransportConnectionState.DISCONNECTED ||
+                    st == TransportConnectionState.ERROR
+                ) {
+                    return@launch
+                }
+
+                val bonded = try {
+                    // Re-fetch device; bondState can update on the same object too
+                    val d = adapter?.getRemoteDevice(address) ?: device
+                    d.bondState == BluetoothDevice.BOND_BONDED
+                } catch (_: Exception) {
+                    device.bondState == BluetoothDevice.BOND_BONDED
+                }
+
+                if (bonded) {
+                    addLog("Bond detected by poll")
+                    finishAsConnected("bond polled")
+                    return@launch
+                }
+            }
+
+            // Timeout: some firmwares pair at OS level but stay BOND_NONE in app;
+            // if GATT is still up, allow CONNECTED so ping can be tried.
+            val stillGatt = try {
+                gatt.device // local ref
+                true
+            } catch (_: Exception) {
+                false
+            }
+            val gattConnected = try {
+                bluetoothManager.getConnectedDevices(BluetoothProfile.GATT)
+                    .any { it.address.equals(address, true) }
+            } catch (_: Exception) {
+                false
+            }
+
+            if (stillGatt || gattConnected) {
+                addLog("Bond wait timeout — GATT still up, marking CONNECTED (try ping)")
+                finishAsConnected("timeout fallback, GATT up")
+            } else {
+                addLog("Bond wait timeout — giving up")
+                unregisterBondReceiver()
+                _Transport_connectionState.value = TransportConnectionState.ERROR
+            }
+        }
+    }
+
+    private fun finishAsConnected(reason: String) {
+        // Idempotent
+        if (_Transport_connectionState.value == TransportConnectionState.CONNECTED) {
+            unregisterBondReceiver()
+            return
+        }
+        unregisterBondReceiver()
+        pendingBondAddress = null
+        _Transport_connectionState.value = TransportConnectionState.CONNECTED
+        addLog("CONNECTED ($reason)")
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun waitForBond(device: BluetoothDevice) {
+        unregisterBondReceiver()
+        pendingBondAddress = device.address
+
+        bondReceiver = object : BroadcastReceiver() {
+            @SuppressLint("MissingPermission")
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                if (intent?.action != BluetoothDevice.ACTION_BOND_STATE_CHANGED) return
+
+                val dev = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(
+                        BluetoothDevice.EXTRA_DEVICE,
+                        BluetoothDevice::class.java
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE) as? BluetoothDevice
+                } ?: return
+
+                val expected = pendingBondAddress ?: return
+                if (!dev.address.equals(expected, ignoreCase = true)) return
+
+                val state = intent.getIntExtra(
+                    BluetoothDevice.EXTRA_BOND_STATE,
+                    BluetoothDevice.BOND_NONE
+                )
+                val prev = intent.getIntExtra(
+                    BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE,
+                    BluetoothDevice.BOND_NONE
+                )
+                addLog("Bond broadcast: $prev → $state")
+
+                when (state) {
+                    BluetoothDevice.BOND_BONDED -> {
+                        finishAsConnected("bond broadcast")
+                    }
+                    BluetoothDevice.BOND_NONE -> {
+                        if (prev == BluetoothDevice.BOND_BONDING) {
+                            addLog("Pairing rejected")
+                            unregisterBondReceiver()
+                            pendingBondAddress = null
+                            _Transport_connectionState.value = TransportConnectionState.ERROR
+                            // optional: disconnect()
+                        }
+                    }
+                    BluetoothDevice.BOND_BONDING -> {
+                        addLog("Waiting for pairing accept…")
+                    }
+                }
+            }
+        }
+
+        val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(
+                    bondReceiver,
+                    filter,
+                    Context.RECEIVER_NOT_EXPORTED
+                )
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                context.registerReceiver(bondReceiver, filter)
+            }
+            addLog("Bond receiver registered")
+        } catch (e: Exception) {
+            addLog("registerReceiver failed: ${e.message}")
+        }
+
+        // Immediate re-check (event may have already fired)
+        if (device.bondState == BluetoothDevice.BOND_BONDED) {
+            finishAsConnected("already bonded after register")
+        }
+    }
+
+    private fun unregisterBondReceiver() {
+        val receiver = bondReceiver ?: return
+        try {
+            context.unregisterReceiver(receiver)
+        } catch (_: Exception) {
+        }
+        bondReceiver = null
+    }
+
+
 
     private val gattCallback = object : BluetoothGattCallback() {
 
@@ -243,10 +446,18 @@ class BleManager(private val context: Context) {
                 _Transport_connectionState.value = TransportConnectionState.ERROR
                 return
             }
-
             addLog("Write  = $writeCharUuid")
             addLog("Notify = $notifyCharUuid")
-            enableNotifications(gatt, notifyChar!!)
+            if (notifyChar != null) {
+                enableNotifications(gatt, notifyChar!!)
+            } else {
+                addLog("Notify Not Found. Only Sending")
+                onReadyToMarkConnected(gatt)
+            }
+
+//            addLog("Write  = $writeCharUuid")
+//            addLog("Notify = $notifyCharUuid")
+//            enableNotifications(gatt, notifyChar!!)
         }
         private fun pickCharacteristics(gatt: BluetoothGatt): Boolean {
             val nordicService = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -323,9 +534,13 @@ class BleManager(private val context: Context) {
             if (cccd != null) {
                 cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 gatt.writeDescriptor(cccd)
+
             } else {
-                _Transport_connectionState.value = TransportConnectionState.CONNECTED
-                addLog("Connected without CCCD")
+//                _Transport_connectionState.value = TransportConnectionState.CONNECTED
+//                addLog("Connected without CCCD")
+
+                addLog("No CCCD — notify may be limited")
+                onReadyToMarkConnected(gatt)
             }
         }
 
@@ -336,12 +551,12 @@ class BleManager(private val context: Context) {
             status: Int
         ) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                _Transport_connectionState.value = TransportConnectionState.CONNECTED
-                addLog("Connected with Notify")
+                addLog("Notify enabled")
             } else {
-                addLog("Notify Activation Failed: $status")
-                _Transport_connectionState.value = TransportConnectionState.CONNECTED
+                addLog("Notify Activation Failed: $status (continue)")
             }
+            // Do NOT set CONNECTED here — wait for bond if needed
+            onReadyToMarkConnected(gatt)
         }
         @SuppressLint("MissingPermission")
         @Deprecated("Deprecated in Java")
@@ -475,6 +690,10 @@ class BleManager(private val context: Context) {
         _lastDeviceResponse.value = null
         val g = gatt
         val ch = writeChar
+        if (_Transport_connectionState.value != TransportConnectionState.CONNECTED) {
+            addLog("Skip send: not fully connected (state=${_Transport_connectionState.value})")
+            return@withContext false
+        }
         if (g == null || ch == null) {
             addLog("Sending is not Ready")
             return@withContext false
