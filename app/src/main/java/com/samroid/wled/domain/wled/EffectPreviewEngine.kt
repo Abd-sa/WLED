@@ -488,6 +488,7 @@ object EffectPreviewEngine {
             // Foreground from palette so changing palette is always visible
             val c1 = if (usePalette) pal(x) else params.primary
             val c2 = params.secondary
+            //if (usePalette) pal(x) else params.primary
             pixel(id, i, n, x, t, sp, ix, c1, c2, ::pal, ::mix, ::scale)
         }
     }
