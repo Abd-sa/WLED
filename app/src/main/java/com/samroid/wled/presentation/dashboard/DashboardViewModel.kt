@@ -32,7 +32,11 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private object AutoConnectGate {
-        @Volatile var attempted = false
+        @Volatile
+        var attempted = false
+
+        @Volatile
+        var softRetryUsed = false
     }
 
     @Volatile private var postConnectHandled = false
@@ -57,6 +61,26 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun tryAutoConnect() {
+//        if (AutoConnectGate.attempted) return
+//        AutoConnectGate.attempted = true
+//
+//        viewModelScope.launch {
+//            if (transport.transportConnectionState.value == TransportConnectionState.CONNECTED) {
+//                onBluetoothConnected()
+//                return@launch
+//            }
+//            val saved = localSettings.getLastBtDevice() ?: return@launch
+//            _uiState.update { it.copy(isAutoConnecting = true) }
+//            val ok = autoConnectBluetooth()
+//            _uiState.update {
+//                it.copy(
+//                    isAutoConnecting = false,
+//                    bluetoothName = if (ok) saved.name else it.bluetoothName
+//                )
+//            }
+//        }
+
+
         if (AutoConnectGate.attempted) return
         AutoConnectGate.attempted = true
 
@@ -65,14 +89,42 @@ class DashboardViewModel @Inject constructor(
                 onBluetoothConnected()
                 return@launch
             }
-            val saved = localSettings.getLastBtDevice() ?: return@launch
+
+            val saved = localSettings.getLastBtDevice()
+            if (saved == null || saved.address.isBlank()) {
+                return@launch
+            }
+
             _uiState.update { it.copy(isAutoConnecting = true) }
-            val ok = autoConnectBluetooth()
+
+            var ok = autoConnectBluetooth()
+
+            if (!ok && !AutoConnectGate.softRetryUsed) {
+                AutoConnectGate.softRetryUsed = true
+                delay(2_000)
+                if (transport.transportConnectionState.value != TransportConnectionState.CONNECTED) {
+                    ok = autoConnectBluetooth()
+                } else {
+                    ok = true
+                }
+            }
+
             _uiState.update {
                 it.copy(
                     isAutoConnecting = false,
-                    bluetoothName = if (ok) saved.name else it.bluetoothName
+                    bluetoothName = if (ok) saved.name else it.bluetoothName,
+                    message = if (!ok) {
+                        it.message ?: "Auto-connect failed. Connect manually once."
+                    } else {
+                        it.message
+                    }
                 )
+            }
+
+            if (ok) {
+                if (transport.transportConnectionState.value == TransportConnectionState.CONNECTED) {
+                    onBluetoothConnected()
+                }
             }
         }
     }

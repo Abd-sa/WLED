@@ -7,17 +7,13 @@ package com.samroid.wled.domain.wled
  */
 object WledEffectCatalog {
 
-    /** Full list id → name (0..159). Unknown slots keep a fallback name. */
+    /** Full list id → * Protocol / UI effect range: 0.MAX_ID (see NAMES). */
     val all: List<WledEffect> by lazy {
-        val names = NAMES
-        (0 until 160).map { id ->
-            WledEffect(id, names.getOrElse(id) { "Effect $id" })
-        }
+        NAMES.mapIndexed { id, name -> WledEffect(id, name) }
     }
 
     fun nameOf(id: Int): String =
-        all.getOrNull(id.coerceIn(0, 159))?.name ?: "Effect $id"
-
+        all.getOrNull(id.coerceIn(0, MAX_ID))?.name ?: "Effect $id"
     fun asDropdownItems(): List<Pair<Int, String>> =
         all.map { it.id to it.name }
 
